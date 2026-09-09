@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local sqlite dev db (no longer used; project runs on Supabase Postgres)
+*.db
+*.db-journal

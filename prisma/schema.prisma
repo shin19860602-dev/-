@@ -1,0 +1,122 @@
+// データベーススキーマ
+// 開発中は SQLite、本番はクラウド Postgres（Supabase想定）に切り替える。
+// datasource の provider と url を変更するだけで移行できるように設計している。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// 店舗（美容室2店舗＋まつ毛エクステ1店舗）
+model Store {
+  id        String   @id @default(cuid())
+  slug      String   @unique // ログインURLに使う店舗識別子
+  name      String
+  kind      String // "SALON" | "LASH"
+  colorKey  String // デザイン上の店舗カラー識別子: "a" | "b" | "c"
+  createdAt DateTime @default(now())
+
+  // 店舗共通のPINログイン試行のロック（誰のPINか分かる前の失敗回数はここで管理）
+  pinFailedAttempts Int       @default(0)
+  pinLockedUntil    DateTime?
+
+  staff      Staff[]
+  customers  Customer[]
+  visits     Visit[]
+  menuItems  MenuItem[]
+}
+
+// スタッフ（オーナー／マネージャー／スタッフ）
+model Staff {
+  id     String @id @default(cuid())
+  storeId String? // オーナーは全店舗を見るため店舗に紐付かない（null可）
+  store   Store?  @relation(fields: [storeId], references: [id])
+
+  name      String
+  role      String // "OWNER" | "MANAGER" | "STAFF"
+  title     String? // 表示用の肩書き（店長・スタイリスト・アイリスト等）
+
+  // スタッフ／マネージャーは4桁PINでログイン、オーナーはメール＋パスワード
+  pinHash      String?
+  email        String?  @unique
+  passwordHash String?
+
+  failedAttempts Int       @default(0)
+  lockedUntil    DateTime?
+
+  hireDate  DateTime?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+
+  visits            Visit[]
+  primaryCustomers  Customer[] @relation("PrimaryStaff")
+}
+
+// お客様（カルテ台帳）
+model Customer {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  name        String
+  kana        String?
+  gender      String? // "male" | "female" | "other"
+  birthday    DateTime?
+  phone       String?
+  postalCode  String? // 郵便番号
+  address     String? // 住所
+  tier        String    @default("一般会員") // "一般会員" | "プレミアム会員"
+  memberSince DateTime?
+  allergyNote String? // アレルギー・注意事項
+
+  primaryStaffId String?
+  primaryStaff   Staff?  @relation("PrimaryStaff", fields: [primaryStaffId], references: [id])
+
+  active    Boolean  @default(true) // 施術履歴が残っている場合、削除の代わりにここをfalseにする
+  createdAt DateTime @default(now())
+  visits    Visit[]
+}
+
+// 施術メニュー・店販商品の一覧（店舗ごと）
+model MenuItem {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  type  String // "service"（施術メニュー） | "product"（店販商品）
+  name  String
+  price Int // 目安金額（円）。売上登録時に初期値として使う
+
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// 来店・施術記録（＝カルテ明細であり、同時に売上明細でもある）
+model Visit {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  staffId String
+  staff   Staff  @relation(fields: [staffId], references: [id])
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  date       DateTime
+  menuName   String // 施術メニュー（例: カット＋カラー）
+  amount     Int // 施術の金額（円）
+  pointAmount   Int? // ポイント売上（円）
+  productName   String? // 店販した商品名（例: シャンプー）
+  productAmount Int? // 店販の金額（円）
+  paymentMethod String? // "cash"（現金） | "credit"（クレジット）
+  memo       String? // 接客メモ
+  chemicalDetail String? // 薬剤・技術詳細（カラー剤、ロッド、放置時間など）
+
+  createdAt DateTime @default(now())
+}
