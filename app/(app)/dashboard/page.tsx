@@ -58,6 +58,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const summaryMonth = monthBounds(selectedBase, 0);
   const summaryCompareMonth = monthBounds(selectedBase, -12);
 
+  const lastYearTrendStart = monthBounds(now, -17).start;
+  const lastYearTrendEnd = monthBounds(now, -12).end;
+
   const [
     todayVisits,
     yesterdayVisits,
@@ -69,6 +72,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     repeatLast,
     allStores,
     trendRows,
+    lastYearTrendRows,
     summaryMonthVisits,
     summaryCompareVisits,
   ] = await Promise.all([
@@ -84,6 +88,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     prisma.visit.findMany({
       where: { storeId, date: { gte: sixMonthsAgo.start, lt: thisMonth.end } },
       select: { storeId: true, amount: true, productAmount: true, pointAmount: true, date: true },
+    }),
+    prisma.visit.findMany({
+      where: { storeId, date: { gte: lastYearTrendStart, lt: lastYearTrendEnd } },
+      select: { amount: true, productAmount: true, date: true },
     }),
     findVisits({ storeId, date: { gte: summaryMonth.start, lt: summaryMonth.end } }),
     findVisits({ storeId, date: { gte: summaryCompareMonth.start, lt: summaryCompareMonth.end } }),
@@ -130,6 +138,23 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       (m) => trendRows.filter((r) => r.storeId === s.id && r.date >= m.start && r.date < m.end).reduce((a, r) => a + visitTotal(r), 0) / 10000
     ),
   }));
+
+  // 月次売上推移の前年比較（技術・商品を分けて、過去6ヶ月それぞれ去年同月と比べる）
+  const monthOffsets = [5, 4, 3, 2, 1, 0];
+  const serviceThisYearByMonth = monthLabels.map((m) =>
+    trendRows.filter((r) => r.date >= m.start && r.date < m.end).reduce((a, r) => a + r.amount, 0)
+  );
+  const productThisYearByMonth = monthLabels.map((m) =>
+    trendRows.filter((r) => r.date >= m.start && r.date < m.end).reduce((a, r) => a + (r.productAmount ?? 0), 0)
+  );
+  const serviceLastYearByMonth = monthOffsets.map((off) => {
+    const b = monthBounds(now, -off - 12);
+    return lastYearTrendRows.filter((r) => r.date >= b.start && r.date < b.end).reduce((a, r) => a + r.amount, 0);
+  });
+  const productLastYearByMonth = monthOffsets.map((off) => {
+    const b = monthBounds(now, -off - 12);
+    return lastYearTrendRows.filter((r) => r.date >= b.start && r.date < b.end).reduce((a, r) => a + (r.productAmount ?? 0), 0);
+  });
 
   // スタッフ売上ランキング（今月）
   const staffTotals = new Map<string, { name: string; title: string | null; colorKey: string; total: number }>();
@@ -209,6 +234,33 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <StaffRankingList staffRanking={staffRanking} />
             </div>
           )}
+        </div>
+
+        <div className="grid-2">
+          <div className="card card-pad">
+            <div className="card-title">月次売上推移（前年比較・技術売上）</div>
+            <div className="card-sub">{scopeLabel}・過去6ヶ月</div>
+            <ComparisonBars
+              categories={monthLabels.map((m) => m.label)}
+              current={serviceThisYearByMonth}
+              previous={serviceLastYearByMonth}
+              currentLabel="今年"
+              previousLabel="去年"
+              valueFormatter={yen}
+            />
+          </div>
+          <div className="card card-pad">
+            <div className="card-title">月次売上推移（前年比較・商品売上）</div>
+            <div className="card-sub">{scopeLabel}・過去6ヶ月</div>
+            <ComparisonBars
+              categories={monthLabels.map((m) => m.label)}
+              current={productThisYearByMonth}
+              previous={productLastYearByMonth}
+              currentLabel="今年"
+              previousLabel="去年"
+              valueFormatter={yen}
+            />
+          </div>
         </div>
 
         <div className="grid-2">
