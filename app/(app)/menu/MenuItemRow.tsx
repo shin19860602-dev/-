@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setMenuItemActive, updateMenuItem, deleteMenuItem, moveMenuItem } from "./actions";
 import { yen } from "@/lib/analytics";
+import { sanitizeDigits } from "@/lib/format";
 
 export default function MenuItemRow({
   id,
@@ -50,7 +51,19 @@ export default function MenuItemRow({
       >
         <input type="hidden" name="id" value={id} />
         <input className="field-input" name="name" defaultValue={name} required style={{ flex: "1 1 200px" }} />
-        <input className="field-input" name="price" type="number" min={0} defaultValue={price} required style={{ width: 110 }} />
+        <input
+          className="field-input"
+          name="price"
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          defaultValue={price}
+          required
+          style={{ width: 110 }}
+          onChange={(e) => {
+            e.target.value = sanitizeDigits(e.target.value);
+          }}
+        />
         <button className="btn-primary" type="submit" disabled={saving} style={{ padding: "5px 12px", fontSize: 11.5 }}>
           {saving ? "保存中…" : "保存"}
         </button>

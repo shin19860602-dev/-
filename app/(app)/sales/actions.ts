@@ -82,3 +82,81 @@ export async function createVisit(formData: FormData) {
   revalidatePath("/analytics");
   return { ok: true as const };
 }
+
+const updateSchema = z.object({
+  visitId: z.string().min(1),
+  menuName: z.string().trim().min(1),
+  amount: z.coerce.number().int().positive(),
+  pointAmount: z.string().optional(),
+  productName: z.string().trim().optional(),
+  productAmount: z.string().optional(),
+  paymentMethod: z.enum(["cash", "credit"]),
+  memo: z.string().trim().optional(),
+});
+
+async function canManageVisit(storeId: string) {
+  const session = await requireSession();
+  if (!session) return null;
+  if (session.role !== "OWNER" && session.storeId !== storeId) return null;
+  return session;
+}
+
+export async function updateVisit(formData: FormData) {
+  const parsed = updateSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false as const, error: "入力内容をご確認ください。" };
+  const data = parsed.data;
+
+  const productName = data.productName || undefined;
+  const productAmount = data.productAmount ? Number(data.productAmount) : undefined;
+  if (productName && !productAmount) return { ok: false as const, error: "店販の金額を入力してください。" };
+  if (!productName && productAmount) return { ok: false as const, error: "店販の商品メニューを入力してください。" };
+  if (productAmount !== undefined && (!Number.isInteger(productAmount) || productAmount <= 0)) {
+    return { ok: false as const, error: "店販の金額をご確認ください。" };
+  }
+
+  const pointAmount = data.pointAmount ? Number(data.pointAmount) : undefined;
+  if (pointAmount !== undefined && (!Number.isInteger(pointAmount) || pointAmount <= 0)) {
+    return { ok: false as const, error: "ポイント売上の金額をご確認ください。" };
+  }
+
+  const visit = await prisma.visit.findUnique({ where: { id: data.visitId } });
+  if (!visit) return { ok: false as const, error: "見つかりません。" };
+
+  const session = await canManageVisit(visit.storeId);
+  if (!session) return { ok: false as const, error: "権限がありません。" };
+
+  await prisma.visit.update({
+    where: { id: data.visitId },
+    data: {
+      menuName: data.menuName,
+      amount: data.amount,
+      pointAmount: pointAmount ?? null,
+      productName: productName ?? null,
+      productAmount: productAmount ?? null,
+      paymentMethod: data.paymentMethod,
+      memo: data.memo || null,
+    },
+  });
+
+  revalidatePath("/sales");
+  revalidatePath("/dashboard");
+  revalidatePath("/karte");
+  revalidatePath("/analytics");
+  return { ok: true as const };
+}
+
+export async function deleteVisit(visitId: string) {
+  const visit = await prisma.visit.findUnique({ where: { id: visitId } });
+  if (!visit) return { ok: false as const, error: "見つかりません。" };
+
+  const session = await canManageVisit(visit.storeId);
+  if (!session) return { ok: false as const, error: "権限がありません。" };
+
+  await prisma.visit.delete({ where: { id: visitId } });
+
+  revalidatePath("/sales");
+  revalidatePath("/dashboard");
+  revalidatePath("/karte");
+  revalidatePath("/analytics");
+  return { ok: true as const };
+}

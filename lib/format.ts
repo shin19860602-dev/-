@@ -4,3 +4,9 @@ export function givenNameInitial(name: string): string {
   const given = parts.length > 1 ? parts[parts.length - 1] : parts[0];
   return given.slice(0, 1) || "?";
 }
+
+// 全角数字を半角に変換し、数字以外を取り除く（スマホの日本語入力で全角数字が入るケースへの対策）
+export function sanitizeDigits(value: string): string {
+  const halfWidth = value.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
+  return halfWidth.replace(/[^0-9]/g, "");
+}

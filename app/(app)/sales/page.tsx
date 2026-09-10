@@ -6,12 +6,11 @@ import { dayBounds, monthBounds, sameDayBounds, findVisits, yen, visitTotal, pct
 import Topbar from "../Topbar";
 import SalesFilters from "./SalesFilters";
 import NewSaleForm from "./NewSaleForm";
+import VisitsTable from "./VisitsTable";
 
 const ROLE_LABEL: Record<string, string> = { OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
-const BADGE_CLASS: Record<string, string> = { a: "badge-store-a", b: "badge-store-b", c: "badge-store-c" };
 const GENDER_LABEL: Record<string, string> = { male: "男性", female: "女性", other: "その他" };
 const PAYMENT_LABEL: Record<string, string> = { cash: "現金", credit: "クレジット" };
-const dateLabel = (d: Date) => `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
 const timeLabel = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 
 function genderBreakdown(visits: { customer: { id: string; gender: string | null } }[]) {
@@ -171,47 +170,7 @@ export default async function SalesPage({
         </div>
 
         <div className="card" style={{ marginTop: 0 }}>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>日付</th>
-                  <th>店舗</th>
-                  <th>担当スタッフ</th>
-                  <th>お客様</th>
-                  <th>施術内容</th>
-                  <th>お支払い</th>
-                  <th style={{ textAlign: "right" }}>金額</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visits.map((v) => (
-                  <tr key={v.id}>
-                    <td data-label="日付">{dateLabel(v.date)}</td>
-                    <td data-label="店舗">
-                      <span className={`badge ${BADGE_CLASS[v.store.colorKey]}`}>{v.store.name}</span>
-                    </td>
-                    <td data-label="担当">{v.staff.name}</td>
-                    <td data-label="お客様">{v.customer.name} 様</td>
-                    <td data-label="施術内容">
-                      {v.menuName}
-                      {v.productName && <span className="card-sub" style={{ margin: 0 }}>＋店販：{v.productName}</span>}
-                      {v.pointAmount ? <span className="card-sub" style={{ margin: 0 }}>＋ポイント{yen(v.pointAmount)}</span> : null}
-                    </td>
-                    <td data-label="お支払い">{v.paymentMethod ? PAYMENT_LABEL[v.paymentMethod] ?? v.paymentMethod : "-"}</td>
-                    <td data-label="金額" style={{ textAlign: "right" }}>
-                      {yen(visitTotal(v))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {visits.length === 0 && (
-              <div className="card-sub" style={{ padding: 20 }}>
-                この条件に一致する売上はまだありません。
-              </div>
-            )}
-          </div>
+          <VisitsTable visits={visits} canEdit={true} />
         </div>
       </div>
     </>

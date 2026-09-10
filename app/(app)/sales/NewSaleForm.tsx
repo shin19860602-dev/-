@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createVisit } from "./actions";
 import CustomerCombobox from "./CustomerCombobox";
+import { sanitizeDigits } from "@/lib/format";
 
 type Store = { id: string; name: string; colorKey: string };
 type Customer = { id: string; name: string; storeId: string };
@@ -160,11 +161,31 @@ export default function NewSaleForm({
           </div>
           <div>
             <label className="form-label">技術売上（円）</label>
-            <input ref={amountRef} className="field-input" type="number" name="amount" min={0} step={100} required />
+            <input
+              ref={amountRef}
+              className="field-input"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              name="amount"
+              required
+              onChange={(e) => {
+                e.target.value = sanitizeDigits(e.target.value);
+              }}
+            />
           </div>
           <div>
             <label className="form-label">ポイント売上（円・任意）</label>
-            <input className="field-input" type="number" name="pointAmount" min={0} step={100} />
+            <input
+              className="field-input"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              name="pointAmount"
+              onChange={(e) => {
+                e.target.value = sanitizeDigits(e.target.value);
+              }}
+            />
           </div>
 
           <div style={{ gridColumn: "span 2", borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 2 }}>
@@ -203,7 +224,17 @@ export default function NewSaleForm({
           </div>
           <div style={{ gridColumn: "span 2" }}>
             <label className="form-label">金額（円）</label>
-            <input ref={productAmountRef} className="field-input" type="number" name="productAmount" min={0} step={100} />
+            <input
+              ref={productAmountRef}
+              className="field-input"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              name="productAmount"
+              onChange={(e) => {
+                e.target.value = sanitizeDigits(e.target.value);
+              }}
+            />
           </div>
 
           <div style={{ gridColumn: "span 2" }}>
