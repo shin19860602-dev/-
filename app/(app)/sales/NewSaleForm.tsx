@@ -39,6 +39,9 @@ export default function NewSaleForm({
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "credit">("cash");
   const [pending, startTransition] = useTransition();
 
+  const today = new Date();
+  const defaultDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
   const customerOptions = useMemo(() => customers.filter((c) => c.storeId === storeId), [customers, storeId]);
   const serviceOptions = useMemo(() => serviceMenus.filter((m) => m.storeId === storeId), [serviceMenus, storeId]);
   const productOptions = useMemo(() => productMenus.filter((m) => m.storeId === storeId), [productMenus, storeId]);
@@ -89,6 +92,11 @@ export default function NewSaleForm({
           ) : (
             <input type="hidden" name="storeId" value={storeId} />
           )}
+
+          <div style={{ gridColumn: "span 2" }}>
+            <label className="form-label">日付</label>
+            <input key={formKey} className="field-input" type="date" name="date" defaultValue={defaultDate} required style={{ maxWidth: 200 }} />
+          </div>
 
           <div style={{ gridColumn: "span 2" }}>
             <label className="form-label">お客様</label>
