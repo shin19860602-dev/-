@@ -8,13 +8,14 @@ import LineChart from "../charts/LineChart";
 import BarList from "../charts/BarList";
 import ComparisonBars from "../charts/ComparisonBars";
 import SummaryStats from "../SummaryStats";
+import MonthSelect from "../MonthSelect";
 
 import { givenNameInitial as initial } from "@/lib/format";
 
 const ROLE_LABEL: Record<string, string> = { OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 const timeLabel = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 
-export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ store?: string }> }) {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ store?: string; month?: string }> }) {
   const session = await requireSession();
   if (!session) redirect("/");
 
@@ -32,24 +33,49 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const yearToDate = yearToDateBounds(now, 0);
   const lastYearToDate = yearToDateBounds(now, -1);
 
+  // 月次まとめ：過去の任意の月を選んで見られるようにする（データが無い月まで遡らない）
+  const earliestVisit = await prisma.visit.aggregate({ where: { storeId: storeId ?? undefined }, _min: { date: true } });
+  const earliestDate = earliestVisit._min.date ?? now;
+  const monthOptions: { value: string; label: string }[] = [];
+  {
+    let y = now.getFullYear();
+    let m = now.getMonth();
+    const endY = earliestDate.getFullYear();
+    const endM = earliestDate.getMonth();
+    while (y > endY || (y === endY && m >= endM)) {
+      monthOptions.push({ value: `${y}-${String(m + 1).padStart(2, "0")}`, label: `${y}年${m + 1}月` });
+      m -= 1;
+      if (m < 0) {
+        m = 11;
+        y -= 1;
+      }
+    }
+  }
+  const defaultMonthValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const selectedMonthValue = sp.month && monthOptions.some((o) => o.value === sp.month) ? sp.month : defaultMonthValue;
+  const [selYear, selMonth] = selectedMonthValue.split("-").map(Number);
+  const selectedBase = new Date(selYear, selMonth - 1, 1);
+  const summaryMonth = monthBounds(selectedBase, 0);
+  const summaryCompareMonth = monthBounds(selectedBase, -12);
+
   const [
     todayVisits,
     yesterdayVisits,
     thisMonthVisits,
     lastMonthVisits,
-    lastYearSameMonthVisits,
     thisYearVisits,
     lastYearToDateVisits,
     repeatThis,
     repeatLast,
     allStores,
     trendRows,
+    summaryMonthVisits,
+    summaryCompareVisits,
   ] = await Promise.all([
     findVisits({ storeId, date: { gte: today.start, lt: today.end } }),
     findVisits({ storeId, date: { gte: yesterday.start, lt: yesterday.end } }),
     findVisits({ storeId, date: { gte: thisMonth.start, lt: thisMonth.end } }),
     findVisits({ storeId, date: { gte: lastMonth.start, lt: lastMonth.end } }),
-    findVisits({ storeId, date: { gte: lastYearSameMonth.start, lt: lastYearSameMonth.end } }),
     findVisits({ storeId, date: { gte: yearToDate.start, lt: yearToDate.end } }),
     findVisits({ storeId, date: { gte: lastYearToDate.start, lt: lastYearToDate.end } }),
     repeatRate(storeId, thisMonth.start, thisMonth.end),
@@ -59,10 +85,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       where: { storeId, date: { gte: sixMonthsAgo.start, lt: thisMonth.end } },
       select: { storeId: true, amount: true, productAmount: true, pointAmount: true, date: true },
     }),
+    findVisits({ storeId, date: { gte: summaryMonth.start, lt: summaryMonth.end } }),
+    findVisits({ storeId, date: { gte: summaryCompareMonth.start, lt: summaryCompareMonth.end } }),
   ]);
 
-  const monthSummary = summarizeVisits(thisMonthVisits);
-  const monthCompareSummary = summarizeVisits(lastYearSameMonthVisits);
+  const monthSummary = summarizeVisits(summaryMonthVisits);
+  const monthCompareSummary = summarizeVisits(summaryCompareVisits);
   const yearSummary = summarizeVisits(thisYearVisits);
   const yearCompareSummary = summarizeVisits(lastYearToDateVisits);
 
@@ -212,9 +240,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
 
         <div className="card card-pad" style={{ marginBottom: 16 }}>
-          <div className="card-title">月次まとめ</div>
-          <div className="card-sub">
-            {scopeLabel}・{thisMonth.start.getMonth() + 1}月（対 去年同月）
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+            <div>
+              <div className="card-title">月次まとめ</div>
+              <div className="card-sub">
+                {scopeLabel}・{selYear}年{selMonth}月（対 去年同月）
+              </div>
+            </div>
+            <MonthSelect options={monthOptions} current={selectedMonthValue} />
           </div>
           <SummaryStats summary={monthSummary} compare={monthCompareSummary} />
           <div style={{ marginTop: 16 }}>
@@ -222,7 +255,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               categories={["技術売上", "商品売上", "合計"]}
               current={[monthSummary.serviceTotal, monthSummary.productTotal, monthSummary.total]}
               previous={[monthCompareSummary.serviceTotal, monthCompareSummary.productTotal, monthCompareSummary.total]}
-              currentLabel="今月"
+              currentLabel={`${selYear}年${selMonth}月`}
               previousLabel="去年同月"
               valueFormatter={yen}
             />
