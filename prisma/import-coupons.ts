@@ -46,10 +46,31 @@ const COUPONS: { slug: string; name: string; price: number }[] = [
   { slug: "shell-valley", name: "【2回目以降の方限定】リタッチカラー＋カット＋ヘッドスパ（クーポン）", price: 9900 },
   { slug: "shell-valley", name: "カット＋5種類の香りから選べるクリームズヘッドスパ（併用不可）（クーポン）", price: 6000 },
   { slug: "shell-valley", name: "【2回目以降のご来店の方はこちら】根本2cmまでのリタッチカラー（クーポン）", price: 4550 },
+
+  // hairsalon ちゅら：re
+  { slug: "chura-re", name: "手触りツヤ感UP☆髪質改善配合MSOカラー&カット&選べるSP・TR（再来・クーポン）", price: 9600 },
+  { slug: "chura-re", name: "【髪質改善カラーカット】悩んだらこちら！ワンカラーのお任せフルコース（再来・クーポン）", price: 10800 },
+  { slug: "chura-re", name: "手触りツヤ感UP☆髪質改善MSOカラー+選べるSP・TR（再来・クーポン）", price: 8200 },
+  { slug: "chura-re", name: "【髪質改善カラー】悩んだらこちら！ワンカラーのお任せフルコース（再来・クーポン）", price: 8800 },
+  { slug: "chura-re", name: "ツヤ感up☆髪質改善SK酸性縮毛矯正&カット&選べるSP&TR（再来・クーポン）", price: 16800 },
+  { slug: "chura-re", name: "もっと綺麗な艶と手触り☆酸性縮毛矯正＆MSOカラー+カット(選べるTR付)（再来・クーポン）", price: 21800 },
+  { slug: "chura-re", name: "艶と癖のおさまりも良くする！髪質改善☆WKストレート&カット（再来・クーポン）", price: 15500 },
+  { slug: "chura-re", name: "艶と癖のおさまりも良くする！髪質改善☆WKストレート&カット＆カラー（再来・クーポン）", price: 20800 },
+  { slug: "chura-re", name: "ふわッとウエーブスタイル☆カット+髪質改善配合パーマ（再来・クーポン）", price: 9800 },
+  { slug: "chura-re", name: "【髪質改善配合】悩んだらこちら☆カット+髪質改善配合デジタルパーマ（再来・クーポン）", price: 11800 },
+  { slug: "chura-re", name: "根元2cmまでのリタッチカラー（再来・クーポン）", price: 3800 },
+  { slug: "chura-re", name: "【髪質改善トリートメント】貴女の髪質に合わせた贅沢トリートメントコース（再来・クーポン）", price: 9900 },
+  { slug: "chura-re", name: "髪質改善配合MSOカラー&カット&選べるSP・TR（全員・クーポン）", price: 10500 },
+  { slug: "chura-re", name: "手触りツヤ感UP！髪質改善酸性縮毛矯正&カット&クイックトリートメント（全員・クーポン）", price: 18800 },
+  { slug: "chura-re", name: "艶と癖のおさまりも良くする！髪質改善☆WKストレート&カット（全員・クーポン）", price: 16500 },
+  { slug: "chura-re", name: "もっと綺麗な艶と手触り☆髪質改善縮毛矯正＆MSOカラー+カット(選べるTR付)（全員・クーポン）", price: 23500 },
+  { slug: "chura-re", name: "艶と癖のおさまりも良くする！髪質改善☆WKストレート&カット＆カラー（全員・クーポン）", price: 22800 },
+  { slug: "chura-re", name: "ボリュームダウンしてサラツヤ髪に☆髪質改善☆トリートメント＋カット（全員・クーポン）", price: 11500 },
+  { slug: "chura-re", name: "ふわッとウエーブスタイル☆カット+髪質改善配合パーマ（全員・クーポン）", price: 10300 },
 ];
 
 async function main() {
-  const stores = await prisma.store.findMany({ where: { slug: { in: ["lien", "shell-valley"] } } });
+  const stores = await prisma.store.findMany({ where: { slug: { in: ["lien", "shell-valley", "chura-re"] } } });
   const storeIdBySlug = new Map(stores.map((s) => [s.slug, s.id]));
 
   const existing = await prisma.menuItem.findMany({
@@ -74,7 +95,8 @@ async function main() {
 
   const lienCount = toCreate.filter((c) => c.storeId === storeIdBySlug.get("lien")).length;
   const svCount = toCreate.filter((c) => c.storeId === storeIdBySlug.get("shell-valley")).length;
-  console.log(`Lien: ${lienCount}件登録、Shell Valley: ${svCount}件登録`);
+  const crCount = toCreate.filter((c) => c.storeId === storeIdBySlug.get("chura-re")).length;
+  console.log(`Lien: ${lienCount}件登録、Shell Valley: ${svCount}件登録、ちゅら：re: ${crCount}件登録`);
 }
 
 main()
