@@ -91,6 +91,7 @@ export async function createVisit(formData: FormData) {
 
 const updateSchema = z.object({
   visitId: z.string().min(1),
+  date: z.string().min(1),
   menuName: z.string().trim().min(1),
   amount: z.coerce.number().int().positive(),
   pointAmount: z.string().optional(),
@@ -131,9 +132,15 @@ export async function updateVisit(formData: FormData) {
   const session = await canManageVisit(visit.storeId);
   if (!session) return { ok: false as const, error: "権限がありません。" };
 
+  const [dateY, dateM, dateD] = data.date.split("-").map(Number);
+  if (!dateY || !dateM || !dateD) return { ok: false as const, error: "日付をご確認ください。" };
+  const original = visit.date;
+  const date = new Date(dateY, dateM - 1, dateD, original.getHours(), original.getMinutes(), original.getSeconds());
+
   await prisma.visit.update({
     where: { id: data.visitId },
     data: {
+      date,
       menuName: data.menuName,
       amount: data.amount,
       pointAmount: pointAmount ?? null,

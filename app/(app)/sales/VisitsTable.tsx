@@ -9,6 +9,7 @@ import { sanitizeDigits } from "@/lib/format";
 const BADGE_CLASS: Record<string, string> = { a: "badge-store-a", b: "badge-store-b", c: "badge-store-c" };
 const PAYMENT_LABEL: Record<string, string> = { cash: "現金", credit: "クレジット" };
 const dateLabel = (d: Date) => `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+const toDateInput = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 type Visit = {
   id: string;
@@ -136,6 +137,10 @@ function EditRow({ visit, colSpan, onDone }: { visit: Visit; colSpan: number; on
           }}
         >
           <input type="hidden" name="visitId" value={visit.id} />
+          <div>
+            <label className="form-label">日付</label>
+            <input className="field-input" name="date" type="date" defaultValue={toDateInput(visit.date)} required />
+          </div>
           <div>
             <label className="form-label">施術内容</label>
             <input className="field-input" name="menuName" defaultValue={visit.menuName} required />
