@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { setMenuItemActive, updateMenuItem, deleteMenuItem } from "./actions";
+import { setMenuItemActive, updateMenuItem, deleteMenuItem, moveMenuItem } from "./actions";
 import { yen } from "@/lib/analytics";
 
 export default function MenuItemRow({
@@ -11,12 +11,16 @@ export default function MenuItemRow({
   price,
   active,
   canEdit,
+  isFirst,
+  isLast,
 }: {
   id: string;
   name: string;
   price: number;
   active: boolean;
   canEdit: boolean;
+  isFirst: boolean;
+  isLast: boolean;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -24,6 +28,7 @@ export default function MenuItemRow({
   const [pending, startTransition] = useTransition();
   const [saving, startSave] = useTransition();
   const [deleting, startDelete] = useTransition();
+  const [moving, startMove] = useTransition();
 
   if (editing) {
     return (
@@ -76,6 +81,36 @@ export default function MenuItemRow({
       </div>
       {canEdit && (
         <div style={{ display: "flex", gap: 6 }}>
+          <button
+            type="button"
+            className="btn-ghost"
+            style={{ padding: "5px 8px", fontSize: 11.5 }}
+            disabled={moving || isFirst}
+            title="上に移動"
+            onClick={() => {
+              startMove(async () => {
+                await moveMenuItem(id, "up");
+                router.refresh();
+              });
+            }}
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            className="btn-ghost"
+            style={{ padding: "5px 8px", fontSize: 11.5 }}
+            disabled={moving || isLast}
+            title="下に移動"
+            onClick={() => {
+              startMove(async () => {
+                await moveMenuItem(id, "down");
+                router.refresh();
+              });
+            }}
+          >
+            ↓
+          </button>
           <button
             type="button"
             className="btn-ghost"

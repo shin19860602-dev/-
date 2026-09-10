@@ -20,7 +20,7 @@ export default async function MenuPage({ searchParams }: { searchParams: Promise
   const stores = await prisma.store.findMany({
     where: storeId ? { id: storeId } : undefined,
     orderBy: { createdAt: "asc" },
-    include: { menuItems: { orderBy: { createdAt: "asc" } } },
+    include: { menuItems: { orderBy: { sortOrder: "asc" } } },
   });
 
   return (
@@ -46,8 +46,17 @@ export default async function MenuPage({ searchParams }: { searchParams: Promise
                   <div className="card-title">施術メニュー</div>
                   <div className="card-sub">売上登録画面のプルダウンに表示されます</div>
                   <div>
-                    {services.map((m) => (
-                      <MenuItemRow key={m.id} id={m.id} name={m.name} price={m.price} active={m.active} canEdit={canEdit} />
+                    {services.map((m, i) => (
+                      <MenuItemRow
+                        key={m.id}
+                        id={m.id}
+                        name={m.name}
+                        price={m.price}
+                        active={m.active}
+                        canEdit={canEdit}
+                        isFirst={i === 0}
+                        isLast={i === services.length - 1}
+                      />
                     ))}
                     {services.length === 0 && <div className="card-sub">まだメニューがありません。</div>}
                   </div>
@@ -58,8 +67,17 @@ export default async function MenuPage({ searchParams }: { searchParams: Promise
                   <div className="card-title">店販商品</div>
                   <div className="card-sub">売上登録画面の店販プルダウンに表示されます</div>
                   <div>
-                    {products.map((m) => (
-                      <MenuItemRow key={m.id} id={m.id} name={m.name} price={m.price} active={m.active} canEdit={canEdit} />
+                    {products.map((m, i) => (
+                      <MenuItemRow
+                        key={m.id}
+                        id={m.id}
+                        name={m.name}
+                        price={m.price}
+                        active={m.active}
+                        canEdit={canEdit}
+                        isFirst={i === 0}
+                        isLast={i === products.length - 1}
+                      />
                     ))}
                     {products.length === 0 && <div className="card-sub">まだ商品がありません。</div>}
                   </div>

@@ -92,6 +92,7 @@ model MenuItem {
   name  String
   price Int // 目安金額（円）。売上登録時に初期値として使う
 
+  sortOrder Int      @default(0) // 表示順（店舗・種別ごとに小さい順）。設定画面の並び替えで変更する
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 }

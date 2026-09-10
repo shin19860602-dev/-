@@ -34,8 +34,13 @@ export async function createMenuItem(formData: FormData) {
   const session = await canManage(data.storeId);
   if (!session) return { ok: false as const, error: "権限がありません。" };
 
+  const last = await prisma.menuItem.findFirst({
+    where: { storeId: data.storeId, type: data.type },
+    orderBy: { sortOrder: "desc" },
+  });
+
   await prisma.menuItem.create({
-    data: { storeId: data.storeId, type: data.type, name: data.name, price: data.price },
+    data: { storeId: data.storeId, type: data.type, name: data.name, price: data.price, sortOrder: (last?.sortOrder ?? -1) + 1 },
   });
 
   revalidatePath("/menu");
@@ -69,6 +74,33 @@ export async function updateMenuItem(formData: FormData) {
   if (!session) return { ok: false as const, error: "権限がありません。" };
 
   await prisma.menuItem.update({ where: { id: data.id }, data: { name: data.name, price: data.price } });
+
+  revalidatePath("/menu");
+  revalidatePath("/sales");
+  return { ok: true as const };
+}
+
+export async function moveMenuItem(id: string, direction: "up" | "down") {
+  const item = await prisma.menuItem.findUnique({ where: { id } });
+  if (!item) return { ok: false as const, error: "見つかりません。" };
+
+  const session = await canManage(item.storeId);
+  if (!session) return { ok: false as const, error: "権限がありません。" };
+
+  const neighbor = await prisma.menuItem.findFirst({
+    where: {
+      storeId: item.storeId,
+      type: item.type,
+      sortOrder: direction === "up" ? { lt: item.sortOrder } : { gt: item.sortOrder },
+    },
+    orderBy: { sortOrder: direction === "up" ? "desc" : "asc" },
+  });
+  if (!neighbor) return { ok: true as const };
+
+  await prisma.$transaction([
+    prisma.menuItem.update({ where: { id: item.id }, data: { sortOrder: neighbor.sortOrder } }),
+    prisma.menuItem.update({ where: { id: neighbor.id }, data: { sortOrder: item.sortOrder } }),
+  ]);
 
   revalidatePath("/menu");
   revalidatePath("/sales");

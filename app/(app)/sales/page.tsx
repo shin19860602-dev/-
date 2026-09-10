@@ -60,7 +60,7 @@ export default async function SalesPage({
     prisma.customer.findMany({ where: { storeId: storeId ?? undefined, active: true }, orderBy: { name: "asc" } }),
     findVisits({ storeId, date: { gte: today.start, lt: today.end } }),
     findVisits({ storeId, date: { gte: lastYearToday.start, lt: lastYearToday.end } }),
-    prisma.menuItem.findMany({ where: { storeId: storeId ?? undefined, active: true }, orderBy: { createdAt: "asc" } }),
+    prisma.menuItem.findMany({ where: { storeId: storeId ?? undefined, active: true }, orderBy: { sortOrder: "asc" } }),
   ]);
 
   const serviceMenus = allMenuItems.filter((m) => m.type === "service");
