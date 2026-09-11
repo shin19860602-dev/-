@@ -48,11 +48,20 @@ export default function LineChart({
             </g>
           );
         })}
-        {categories.map((c, i) => (
-          <text key={c} x={xFor(i)} y={height - 14} textAnchor="middle" fontSize="10.5">
-            {c}
-          </text>
-        ))}
+        {(() => {
+          // カテゴリが多いとラベルが重なるため、間引いて表示する（最後の点は必ず表示）
+          const maxLabels = 12;
+          const step = Math.max(1, Math.ceil(categories.length / maxLabels));
+          return categories.map((c, i) => {
+            const isLast = i === categories.length - 1;
+            if (i % step !== 0 && !isLast) return null;
+            return (
+              <text key={c} x={xFor(i)} y={height - 14} textAnchor="middle" fontSize="10.5">
+                {c}
+              </text>
+            );
+          });
+        })()}
         {series.map((s) => {
           const points = s.values.map((v, i) => `${xFor(i)},${yFor(v)}`).join(" ");
           const lastIdx = s.values.length - 1;

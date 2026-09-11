@@ -10,8 +10,6 @@ import ComparisonBars from "../charts/ComparisonBars";
 import SummaryStats from "../SummaryStats";
 import MonthSelect from "../MonthSelect";
 
-import { givenNameInitial as initial } from "@/lib/format";
-
 const ROLE_LABEL: Record<string, string> = { OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 const timeLabel = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 
@@ -91,7 +89,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     }),
     prisma.visit.findMany({
       where: { storeId, date: { gte: lastYearTrendStart, lt: lastYearTrendEnd } },
-      select: { amount: true, productAmount: true, date: true },
+      select: { amount: true, productAmount: true, pointAmount: true, date: true },
     }),
     findVisits({ storeId, date: { gte: summaryMonth.start, lt: summaryMonth.end } }),
     findVisits({ storeId, date: { gte: summaryCompareMonth.start, lt: summaryCompareMonth.end } }),
@@ -156,15 +154,23 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     return lastYearTrendRows.filter((r) => r.date >= b.start && r.date < b.end).reduce((a, r) => a + (r.productAmount ?? 0), 0);
   });
 
-  // スタッフ売上ランキング（今月）
-  const staffTotals = new Map<string, { name: string; title: string | null; colorKey: string; total: number }>();
-  for (const v of thisMonthVisits) {
-    const key = v.staffId;
-    const entry = staffTotals.get(key) ?? { name: v.staff.name, title: v.staff.title, colorKey: v.staff.store?.colorKey ?? "a", total: 0 };
-    entry.total += visitTotal(v);
-    staffTotals.set(key, entry);
+  // 日次売上推移（今月・曜日つき・前年同日比較）
+  const WEEKDAY_JA = ["日", "月", "火", "水", "木", "金", "土"];
+  const dailyLabels: string[] = [];
+  const dailyThisYear: number[] = [];
+  const dailyLastYear: number[] = [];
+  for (let d = 1; d <= now.getDate(); d++) {
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), d);
+    const dayEnd = new Date(now.getFullYear(), now.getMonth(), d + 1);
+    dailyLabels.push(`${d}(${WEEKDAY_JA[dayStart.getDay()]})`);
+    dailyThisYear.push(trendRows.filter((r) => r.date >= dayStart && r.date < dayEnd).reduce((a, r) => a + visitTotal(r), 0));
+
+    const lastYearDayStart = new Date(now.getFullYear() - 1, now.getMonth(), d);
+    const lastYearDayEnd = new Date(now.getFullYear() - 1, now.getMonth(), d + 1);
+    dailyLastYear.push(
+      lastYearTrendRows.filter((r) => r.date >= lastYearDayStart && r.date < lastYearDayEnd).reduce((a, r) => a + visitTotal(r), 0)
+    );
   }
-  const staffRanking = [...staffTotals.values()].sort((a, b) => b.total - a.total).slice(0, 4);
 
   const recentUpdates = thisMonthVisits.slice(0, 4);
 
@@ -221,19 +227,29 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             />
           </div>
 
-          {!storeId ? (
+          {!storeId && (
             <div className="card card-pad">
               <div className="card-title">今月の店舗別売上</div>
               <div className="card-sub">構成比</div>
               <BarList bars={storeBars} valueFormatter={yen} />
             </div>
-          ) : (
-            <div className="card card-pad">
-              <div className="card-title">スタッフ売上ランキング（今月）</div>
-              <div className="card-sub">{store?.name}</div>
-              <StaffRankingList staffRanking={staffRanking} />
-            </div>
           )}
+        </div>
+
+        <div className="card card-pad" style={{ marginBottom: 16 }}>
+          <div className="card-title">日次売上推移（前年比較）</div>
+          <div className="card-sub">
+            {scopeLabel}・{now.getFullYear()}年{now.getMonth() + 1}月（曜日つき・去年の同日と比較）
+          </div>
+          <LineChart
+            categories={dailyLabels}
+            series={[
+              { key: "this", label: `${now.getFullYear()}年`, color: "var(--accent)", values: dailyThisYear.map((v) => v / 10000) },
+              { key: "last", label: `${now.getFullYear() - 1}年`, color: "var(--text-faint)", values: dailyLastYear.map((v) => v / 10000) },
+            ]}
+            unit="万円"
+            valueFormatter={(v) => v.toFixed(0)}
+          />
         </div>
 
         <div className="grid-2">
@@ -264,14 +280,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
 
         <div className="grid-2">
-          {!storeId && (
-            <div className="card card-pad">
-              <div className="card-title">スタッフ売上ランキング（今月）</div>
-              <div className="card-sub">全店舗合算</div>
-              <StaffRankingList staffRanking={staffRanking} />
-            </div>
-          )}
-
           <div className="card card-pad">
             <div className="card-title">最近のカルテ更新</div>
             <div className="card-sub">直近の来店・記録</div>
@@ -333,25 +341,5 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
       </div>
     </>
-  );
-}
-
-function StaffRankingList({ staffRanking }: { staffRanking: { name: string; title: string | null; colorKey: string; total: number }[] }) {
-  if (staffRanking.length === 0) return <div className="card-sub">今月の記録はまだありません。</div>;
-  return (
-    <div>
-      {staffRanking.map((s) => (
-        <div className="list-row" key={s.name}>
-          <div className="mini-avatar" style={{ background: `var(--store-${s.colorKey})` }}>
-            {initial(s.name)}
-          </div>
-          <div className="grow">
-            <div className="title">{s.name}</div>
-            <div className="meta">{s.title}</div>
-          </div>
-          <div className="amount">{yen(s.total)}</div>
-        </div>
-      ))}
-    </div>
   );
 }
