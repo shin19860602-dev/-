@@ -76,7 +76,7 @@ export default async function KartePage({
               stores={allStores.map((s) => ({ id: s.id, name: s.name }))}
               staff={allStaff.map((s) => ({ id: s.id, name: s.name, storeId: s.storeId, title: s.title }))}
             />
-            <div>
+            <div className="cust-list">
               {customers.map((c) => (
                 <a key={c.id} className={`cust-item${c.id === selectedId ? " active" : ""}`} href={customerHref(c.id)}>
                   <div className="mini-avatar" style={{ background: `var(--store-${c.store.colorKey})` }}>
