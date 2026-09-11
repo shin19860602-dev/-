@@ -10,6 +10,7 @@ const schema = z.object({
   date: z.string().min(1),
   customerId: z.string().min(1).optional(),
   newCustomerName: z.string().trim().min(1).optional(),
+  newCustomerKana: z.string().trim().optional(),
   newCustomerGender: z.enum(["male", "female", "other"]).optional(),
   menuName: z.string().trim().min(1),
   amount: z.coerce.number().int().positive(),
@@ -52,7 +53,7 @@ export async function createVisit(formData: FormData) {
   let customerId = data.customerId;
   if (!customerId && data.newCustomerName) {
     const created = await prisma.customer.create({
-      data: { storeId, name: data.newCustomerName, gender: data.newCustomerGender, tier: "一般会員" },
+      data: { storeId, name: data.newCustomerName, kana: data.newCustomerKana || undefined, gender: data.newCustomerGender, tier: "一般会員" },
     });
     customerId = created.id;
   }

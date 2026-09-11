@@ -121,13 +121,16 @@ export default function NewSaleForm({
             {customerMode === "existing" ? (
               <CustomerCombobox key={`${formKey}-${storeId}`} customers={customerOptions} name="customerId" placeholder="お名前で検索" />
             ) : (
-              <div style={{ display: "flex", gap: 8 }}>
-                <input className="field-input" name="newCustomerName" placeholder="お客様のお名前" required style={{ flex: 1 }} />
-                <select className="field-select" name="newCustomerGender" defaultValue="female" style={{ width: 100 }}>
-                  <option value="female">女性</option>
-                  <option value="male">男性</option>
-                  <option value="other">その他</option>
-                </select>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input className="field-input" name="newCustomerName" placeholder="お客様のお名前" required style={{ flex: 1 }} />
+                  <select className="field-select" name="newCustomerGender" defaultValue="female" style={{ width: 100 }}>
+                    <option value="female">女性</option>
+                    <option value="male">男性</option>
+                    <option value="other">その他</option>
+                  </select>
+                </div>
+                <input className="field-input" name="newCustomerKana" placeholder="ふりがな（任意）" />
               </div>
             )}
           </div>
