@@ -10,6 +10,9 @@ type Store = { id: string; name: string; colorKey: string };
 type Customer = { id: string; name: string; storeId: string };
 type MenuItem = { id: string; name: string; price: number; storeId: string };
 
+// IME変換前（ひらがな入力中）の文字列だけを拾う。漢字から読みを推測するより、実際にタイプされたかなの方が正確。
+const HIRAGANA_RE = /^[ぁ-ゖー]+$/;
+
 export default function NewSaleForm({
   isOwner,
   fixedStoreId,
@@ -29,6 +32,10 @@ export default function NewSaleForm({
   const formRef = useRef<HTMLFormElement>(null);
   const amountRef = useRef<HTMLInputElement>(null);
   const productAmountRef = useRef<HTMLInputElement>(null);
+  const kanaRef = useRef<HTMLInputElement>(null);
+  const kanaTouchedRef = useRef(false);
+  const kanaBufferRef = useRef("");
+  const lastHiraganaRef = useRef("");
   const [storeId, setStoreId] = useState(fixedStoreId ?? stores[0]?.id ?? "");
   const [customerMode, setCustomerMode] = useState<"existing" | "new">("existing");
   const [serviceCustom, setServiceCustom] = useState(false);
@@ -68,6 +75,9 @@ export default function NewSaleForm({
               setServiceCustom(false);
               setProductCustom(false);
               setPaymentMethod("cash");
+              kanaTouchedRef.current = false;
+              kanaBufferRef.current = "";
+              lastHiraganaRef.current = "";
               setFormKey((k) => k + 1);
               setJustSaved(true);
               router.refresh();
@@ -121,16 +131,50 @@ export default function NewSaleForm({
             {customerMode === "existing" ? (
               <CustomerCombobox key={`${formKey}-${storeId}`} customers={customerOptions} name="customerId" placeholder="お名前で検索" />
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div key={formKey} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <input className="field-input" name="newCustomerName" placeholder="お客様のお名前" required style={{ flex: 1 }} />
+                  <input
+                    className="field-input"
+                    name="newCustomerName"
+                    placeholder="お客様のお名前"
+                    required
+                    style={{ flex: 1 }}
+                    onCompositionUpdate={(e) => {
+                      const data = e.data ?? "";
+                      if (HIRAGANA_RE.test(data)) lastHiraganaRef.current = data;
+                    }}
+                    onCompositionEnd={() => {
+                      if (lastHiraganaRef.current) {
+                        kanaBufferRef.current += lastHiraganaRef.current;
+                        lastHiraganaRef.current = "";
+                        if (!kanaTouchedRef.current && kanaRef.current) {
+                          kanaRef.current.value = kanaBufferRef.current;
+                        }
+                      }
+                    }}
+                    onChange={(e) => {
+                      if (e.target.value === "") {
+                        kanaBufferRef.current = "";
+                        kanaTouchedRef.current = false;
+                        if (kanaRef.current) kanaRef.current.value = "";
+                      }
+                    }}
+                  />
                   <select className="field-select" name="newCustomerGender" defaultValue="female" style={{ width: 100 }}>
                     <option value="female">女性</option>
                     <option value="male">男性</option>
                     <option value="other">その他</option>
                   </select>
                 </div>
-                <input className="field-input" name="newCustomerKana" placeholder="ふりがな（任意）" />
+                <input
+                  ref={kanaRef}
+                  className="field-input"
+                  name="newCustomerKana"
+                  placeholder="ふりがな（自動入力・修正できます）"
+                  onChange={() => {
+                    kanaTouchedRef.current = true;
+                  }}
+                />
               </div>
             )}
           </div>
