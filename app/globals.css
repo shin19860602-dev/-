@@ -258,6 +258,7 @@ tr:last-child td { border-bottom: none; }
 }
 .search-box input { border: none; outline: none; background: transparent; font-family: inherit; font-size: 13px; width: 100%; color: var(--text); }
 .cust-list { max-height: 540px; overflow-y: auto; }
+.menu-item-list { max-height: 270px; overflow-y: auto; }
 .cust-item { display: flex; gap: 10px; align-items: center; padding: 11px 10px; border-radius: 12px; cursor: pointer; border: 1px solid transparent; text-decoration: none; color: inherit; }
 .cust-item:hover { background: var(--surface-alt); }
 .cust-item.active { background: var(--accent-soft); border-color: var(--accent); }

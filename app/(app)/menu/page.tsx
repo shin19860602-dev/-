@@ -46,7 +46,7 @@ export default async function MenuPage({ searchParams }: { searchParams: Promise
                 <div className="card card-pad">
                   <div className="card-title">クーポン</div>
                   <div className="card-sub">売上登録画面のクーポンのプルダウンに表示されます</div>
-                  <div>
+                  <div className="menu-item-list">
                     {coupons.map((m, i) => (
                       <MenuItemRow
                         key={m.id}
@@ -67,7 +67,7 @@ export default async function MenuPage({ searchParams }: { searchParams: Promise
                 <div className="card card-pad">
                   <div className="card-title">メニュー</div>
                   <div className="card-sub">売上登録画面のメニューのプルダウンに表示されます</div>
-                  <div>
+                  <div className="menu-item-list">
                     {menus.map((m, i) => (
                       <MenuItemRow
                         key={m.id}
@@ -88,7 +88,7 @@ export default async function MenuPage({ searchParams }: { searchParams: Promise
                 <div className="card card-pad">
                   <div className="card-title">店販商品</div>
                   <div className="card-sub">売上登録画面の店販プルダウンに表示されます</div>
-                  <div>
+                  <div className="menu-item-list">
                     {products.map((m, i) => (
                       <MenuItemRow
                         key={m.id}
