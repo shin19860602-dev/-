@@ -31,7 +31,7 @@ export default function VisitsTable({ visits, canEdit }: { visits: Visit[]; canE
   const [editingId, setEditingId] = useState<string | null>(null);
 
   return (
-    <div className="table-wrap">
+    <div className="table-wrap table-scroll">
       <table>
         <thead>
           <tr>
