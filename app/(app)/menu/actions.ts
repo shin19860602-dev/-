@@ -7,7 +7,7 @@ import { requireSession } from "@/lib/session";
 
 const createSchema = z.object({
   storeId: z.string().min(1),
-  type: z.enum(["service", "product"]),
+  type: z.enum(["service", "product", "menu"]),
   name: z.string().trim().min(1),
   price: z.coerce.number().int().min(0),
 });

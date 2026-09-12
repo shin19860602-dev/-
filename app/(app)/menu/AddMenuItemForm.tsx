@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { createMenuItem } from "./actions";
 import { sanitizeDigits } from "@/lib/format";
 
-export default function AddMenuItemForm({ storeId, type }: { storeId: string; type: "service" | "product" }) {
+const PLACEHOLDER: Record<"service" | "menu" | "product", string> = {
+  service: "新しいクーポン名",
+  menu: "新しいメニュー名",
+  product: "新しい商品名",
+};
+
+export default function AddMenuItemForm({ storeId, type }: { storeId: string; type: "service" | "menu" | "product" }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +36,7 @@ export default function AddMenuItemForm({ storeId, type }: { storeId: string; ty
     >
       <input type="hidden" name="storeId" value={storeId} />
       <input type="hidden" name="type" value={type} />
-      <input className="field-input" name="name" placeholder={type === "service" ? "新しい施術メニュー名" : "新しい商品名"} required style={{ flex: 1 }} />
+      <input className="field-input" name="name" placeholder={PLACEHOLDER[type]} required style={{ flex: 1 }} />
       <input
         className="field-input"
         name="price"

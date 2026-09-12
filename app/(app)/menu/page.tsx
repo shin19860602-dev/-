@@ -31,7 +31,8 @@ export default async function MenuPage({ searchParams }: { searchParams: Promise
 
         {stores.map((s) => {
           const canEdit = session.role === "OWNER" || (session.role === "MANAGER" && session.storeId === s.id);
-          const services = s.menuItems.filter((m) => m.type === "service");
+          const coupons = s.menuItems.filter((m) => m.type === "service");
+          const menus = s.menuItems.filter((m) => m.type === "menu");
           const products = s.menuItems.filter((m) => m.type === "product");
 
           return (
@@ -43,10 +44,10 @@ export default async function MenuPage({ searchParams }: { searchParams: Promise
               )}
               <div className="grid-2">
                 <div className="card card-pad">
-                  <div className="card-title">施術メニュー</div>
-                  <div className="card-sub">売上登録画面のプルダウンに表示されます</div>
+                  <div className="card-title">クーポン</div>
+                  <div className="card-sub">売上登録画面のクーポンのプルダウンに表示されます</div>
                   <div>
-                    {services.map((m, i) => (
+                    {coupons.map((m, i) => (
                       <MenuItemRow
                         key={m.id}
                         id={m.id}
@@ -55,12 +56,33 @@ export default async function MenuPage({ searchParams }: { searchParams: Promise
                         active={m.active}
                         canEdit={canEdit}
                         isFirst={i === 0}
-                        isLast={i === services.length - 1}
+                        isLast={i === coupons.length - 1}
                       />
                     ))}
-                    {services.length === 0 && <div className="card-sub">まだメニューがありません。</div>}
+                    {coupons.length === 0 && <div className="card-sub">まだクーポンがありません。</div>}
                   </div>
                   {canEdit && <AddMenuItemForm storeId={s.id} type="service" />}
+                </div>
+
+                <div className="card card-pad">
+                  <div className="card-title">メニュー</div>
+                  <div className="card-sub">売上登録画面のメニューのプルダウンに表示されます</div>
+                  <div>
+                    {menus.map((m, i) => (
+                      <MenuItemRow
+                        key={m.id}
+                        id={m.id}
+                        name={m.name}
+                        price={m.price}
+                        active={m.active}
+                        canEdit={canEdit}
+                        isFirst={i === 0}
+                        isLast={i === menus.length - 1}
+                      />
+                    ))}
+                    {menus.length === 0 && <div className="card-sub">まだメニューがありません。</div>}
+                  </div>
+                  {canEdit && <AddMenuItemForm storeId={s.id} type="menu" />}
                 </div>
 
                 <div className="card card-pad">

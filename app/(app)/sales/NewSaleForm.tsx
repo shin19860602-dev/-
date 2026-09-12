@@ -18,14 +18,16 @@ export default function NewSaleForm({
   fixedStoreId,
   stores,
   customers,
-  serviceMenus,
+  couponMenus,
+  menuMenus,
   productMenus,
 }: {
   isOwner: boolean;
   fixedStoreId?: string;
   stores: Store[];
   customers: Customer[];
-  serviceMenus: MenuItem[];
+  couponMenus: MenuItem[];
+  menuMenus: MenuItem[];
   productMenus: MenuItem[];
 }) {
   const router = useRouter();
@@ -40,7 +42,8 @@ export default function NewSaleForm({
   const lastHiraganaRef = useRef("");
   const [storeId, setStoreId] = useState(fixedStoreId ?? stores[0]?.id ?? "");
   const [customerMode, setCustomerMode] = useState<"existing" | "new">("existing");
-  const [serviceCustom, setServiceCustom] = useState(false);
+  const [couponCustom, setCouponCustom] = useState(false);
+  const [menuCustom, setMenuCustom] = useState(false);
   const [productCustom, setProductCustom] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
@@ -52,7 +55,8 @@ export default function NewSaleForm({
   const defaultDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   const customerOptions = useMemo(() => customers.filter((c) => c.storeId === storeId), [customers, storeId]);
-  const serviceOptions = useMemo(() => serviceMenus.filter((m) => m.storeId === storeId), [serviceMenus, storeId]);
+  const couponOptions = useMemo(() => couponMenus.filter((m) => m.storeId === storeId), [couponMenus, storeId]);
+  const menuOptions = useMemo(() => menuMenus.filter((m) => m.storeId === storeId), [menuMenus, storeId]);
   const productOptions = useMemo(() => productMenus.filter((m) => m.storeId === storeId), [productMenus, storeId]);
 
   // 技術売上＝クーポン金額＋メニュー金額の合計（表示のみ。実際の保存額はサーバー側で再計算する）
@@ -81,7 +85,8 @@ export default function NewSaleForm({
             if (result.ok) {
               formRef.current?.reset();
               setCustomerMode("existing");
-              setServiceCustom(false);
+              setCouponCustom(false);
+              setMenuCustom(false);
               setProductCustom(false);
               setPaymentMethod("cash");
               kanaTouchedRef.current = false;
@@ -190,9 +195,41 @@ export default function NewSaleForm({
           </div>
 
           <div style={{ gridColumn: "span 2" }}>
-            <label className="form-label">クーポン（任意）</label>
+            <label className="form-label">
+              クーポン（任意）
+              <button
+                type="button"
+                onClick={() => setCouponCustom((v) => !v)}
+                style={{ marginLeft: 8, fontSize: 11, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+              >
+                {couponCustom ? "一覧から選ぶ" : "自由入力に切替"}
+              </button>
+            </label>
             <div style={{ display: "flex", gap: 8 }}>
-              <input className="field-input" name="couponName" placeholder="例：似合わせカット＋カラークーポン" style={{ flex: 1 }} />
+              {couponCustom || couponOptions.length === 0 ? (
+                <input className="field-input" name="couponName" placeholder="例：似合わせカット＋カラークーポン" style={{ flex: 1 }} />
+              ) : (
+                <select
+                  className="field-select"
+                  name="couponName"
+                  defaultValue=""
+                  style={{ flex: 1 }}
+                  onChange={(e) => {
+                    const item = couponOptions.find((m) => m.name === e.target.value);
+                    if (item && couponAmountRef.current) {
+                      couponAmountRef.current.value = String(item.price);
+                      updateTechnicalTotal();
+                    }
+                  }}
+                >
+                  <option value="">選択しない</option>
+                  {couponOptions.map((m) => (
+                    <option key={m.id} value={m.name}>
+                      {m.name}（¥{m.price.toLocaleString("ja-JP")}）
+                    </option>
+                  ))}
+                </select>
+              )}
               <input
                 ref={couponAmountRef}
                 className="field-input"
@@ -215,14 +252,14 @@ export default function NewSaleForm({
               メニュー（任意）
               <button
                 type="button"
-                onClick={() => setServiceCustom((v) => !v)}
+                onClick={() => setMenuCustom((v) => !v)}
                 style={{ marginLeft: 8, fontSize: 11, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
               >
-                {serviceCustom ? "一覧から選ぶ" : "自由入力に切替"}
+                {menuCustom ? "一覧から選ぶ" : "自由入力に切替"}
               </button>
             </label>
             <div style={{ display: "flex", gap: 8 }}>
-              {serviceCustom || serviceOptions.length === 0 ? (
+              {menuCustom || menuOptions.length === 0 ? (
                 <input className="field-input" name="menuName" placeholder="例：カット＋カラー" style={{ flex: 1 }} />
               ) : (
                 <select
@@ -231,7 +268,7 @@ export default function NewSaleForm({
                   defaultValue=""
                   style={{ flex: 1 }}
                   onChange={(e) => {
-                    const item = serviceOptions.find((m) => m.name === e.target.value);
+                    const item = menuOptions.find((m) => m.name === e.target.value);
                     if (item && menuAmountRef.current) {
                       menuAmountRef.current.value = String(item.price);
                       updateTechnicalTotal();
@@ -239,7 +276,7 @@ export default function NewSaleForm({
                   }}
                 >
                   <option value="">選択しない</option>
-                  {serviceOptions.map((m) => (
+                  {menuOptions.map((m) => (
                     <option key={m.id} value={m.name}>
                       {m.name}（¥{m.price.toLocaleString("ja-JP")}）
                     </option>

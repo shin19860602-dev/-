@@ -62,7 +62,8 @@ export default async function SalesPage({
     prisma.menuItem.findMany({ where: { storeId: storeId ?? undefined, active: true }, orderBy: { sortOrder: "asc" } }),
   ]);
 
-  const serviceMenus = allMenuItems.filter((m) => m.type === "service");
+  const couponMenus = allMenuItems.filter((m) => m.type === "service");
+  const menuMenus = allMenuItems.filter((m) => m.type === "menu");
   const productMenus = allMenuItems.filter((m) => m.type === "product");
 
   const staffOptions = allStaff.map((s) => ({ id: s.id, name: s.name }));
@@ -85,7 +86,8 @@ export default async function SalesPage({
           fixedStoreId={storeId}
           stores={allStores.map((s) => ({ id: s.id, name: s.name, colorKey: s.colorKey }))}
           customers={allCustomers.map((c) => ({ id: c.id, name: c.name, storeId: c.storeId }))}
-          serviceMenus={serviceMenus}
+          couponMenus={couponMenus}
+          menuMenus={menuMenus}
           productMenus={productMenus}
         />
 
