@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/session";
 import { resolveStoreScope } from "@/lib/scope";
 import { prisma } from "@/lib/prisma";
-import { monthBounds, yen } from "@/lib/analytics";
+import { yen } from "@/lib/analytics";
 import { salaryGross, salaryDeduction, salaryNet } from "@/lib/payroll";
 import Topbar from "../Topbar";
 import SettingsTabs from "../SettingsTabs";
@@ -54,8 +54,6 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   }
   const defaultMonthValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const selectedMonthValue = sp.month && monthOptions.some((o) => o.value === sp.month) ? sp.month : defaultMonthValue;
-  const [selYear, selMonth] = selectedMonthValue.split("-").map(Number);
-  const selectedMonthRange = monthBounds(new Date(selYear, selMonth - 1, 1), 0);
 
   const staffList = await prisma.staff.findMany({
     where: { storeId: storeId ?? undefined, role: { not: "OWNER" } },
@@ -64,53 +62,24 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   });
   const staffIds = staffList.map((s) => s.id);
 
-  const [salaries, monthVisits] = await Promise.all([
-    prisma.salary.findMany({ where: { staffId: { in: staffIds }, yearMonth: selectedMonthValue } }),
-    prisma.visit.findMany({
-      where: { staffId: { in: staffIds }, date: { gte: selectedMonthRange.start, lt: selectedMonthRange.end } },
-      select: { staffId: true, amount: true, productAmount: true },
-    }),
-  ]);
+  const salaries = await prisma.salary.findMany({ where: { staffId: { in: staffIds }, yearMonth: selectedMonthValue } });
   const salaryByStaff = new Map(salaries.map((s) => [s.staffId, s]));
 
-  // その月の技術売上・商品売上（歩合手当の自動計算に使う）
-  const salesByStaff = new Map<string, { service: number; product: number }>();
-  for (const v of monthVisits) {
-    const cur = salesByStaff.get(v.staffId) ?? { service: 0, product: 0 };
-    cur.service += v.amount;
-    cur.product += v.productAmount ?? 0;
-    salesByStaff.set(v.staffId, cur);
-  }
-
-  const rows = staffList.map((s) => {
-    const saved = salaryByStaff.get(s.id);
-    const sales = salesByStaff.get(s.id) ?? { service: 0, product: 0 };
-    const insuranceRate = s.store?.insuranceRate ?? 0;
-
-    if (saved) {
-      return { staff: s, values: saved };
-    }
-
-    // 未登録の月は、実績と設定済みの歩合率・保険料率から目安額を自動計算して初期値にする
-    const baseSalary = 0;
-    const serviceCommission = Math.round((sales.service * s.serviceCommissionRate) / 100);
-    const productCommission = Math.round((sales.product * s.productCommissionRate) / 100);
-    const specialAllowance = 0;
-    const employmentInsurance = Math.round(((baseSalary + serviceCommission + productCommission + specialAllowance) * insuranceRate) / 100);
-    return {
-      staff: s,
-      values: {
-        baseSalary,
-        serviceCommission,
-        productCommission,
-        specialAllowance,
-        employmentInsurance,
+  const rows = staffList.map((s) => ({
+    staff: s,
+    values:
+      salaryByStaff.get(s.id) ??
+      {
+        baseSalary: 0,
+        serviceCommission: 0,
+        productCommission: 0,
+        specialAllowance: 0,
+        employmentInsurance: 0,
         incomeTax: 0,
         residentTax: 0,
         memo: null as string | null,
       },
-    };
-  });
+  }));
 
   const totals = rows.reduce(
     (acc, r) => {
@@ -185,8 +154,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
               incomeTax={values.incomeTax}
               residentTax={values.residentTax}
               memo={values.memo ?? ""}
-              serviceCommissionRate={s.serviceCommissionRate}
-              productCommissionRate={s.productCommissionRate}
+              insuranceRate={s.store?.insuranceRate ?? 0}
               canEdit={canEdit}
             />
           ))}
@@ -199,7 +167,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
 
         <div className="card-sub" style={{ marginTop: 10 }}>
           {canEdit
-            ? "※技術・商品歩合手当と雇用保険は目安額を自動計算します（保存前なら編集可）。所得税・住民税は税額表や自治体の通知額を参照する必要があるため手入力です。登録・編集できるのはオーナーのみです。"
+            ? "※雇用保険は支給合計×料率、所得税は国税庁の源泉徴収税額表（甲欄・0人）から自動計算します（保存前なら編集可）。住民税は自治体の通知額を手入力してください。登録・編集できるのはオーナーのみです。"
             : "※この店舗のスタッフの給与です（閲覧のみ）。"}
         </div>
       </div>

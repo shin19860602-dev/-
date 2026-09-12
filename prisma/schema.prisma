@@ -61,10 +61,6 @@ model Staff {
   active    Boolean   @default(true)
   createdAt DateTime  @default(now())
 
-  // 歩合手当の計算に使う歩合率（%）。給料画面からオーナーが設定する。
-  serviceCommissionRate Float @default(0) // 技術歩合率
-  productCommissionRate Float @default(0) // 商品歩合率
-
   visits            Visit[]
   primaryCustomers  Customer[] @relation("PrimaryStaff")
   salaries          Salary[]

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { saveSalary } from "./actions";
 import { yen } from "@/lib/analytics";
 import { salaryGross, salaryDeduction, salaryNet } from "@/lib/payroll";
+import { calcIncomeTax } from "@/lib/incomeTax";
 import { sanitizeAmountInput } from "@/lib/format";
 
 type Props = {
@@ -20,13 +21,12 @@ type Props = {
   incomeTax: number;
   residentTax: number;
   memo: string;
-  serviceCommissionRate: number;
-  productCommissionRate: number;
+  insuranceRate: number;
   canEdit: boolean;
 };
 
 export default function SalaryRow(props: Props) {
-  const { staffId, staffName, storeName, yearMonth, memo, canEdit } = props;
+  const { staffId, staffName, storeName, yearMonth, memo, insuranceRate, canEdit } = props;
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,13 +42,26 @@ export default function SalaryRow(props: Props) {
   const grossRef = useRef<HTMLInputElement>(null);
   const deductionRef = useRef<HTMLInputElement>(null);
   const netRef = useRef<HTMLInputElement>(null);
+  const insuranceTouchedRef = useRef(false);
+  const incomeTaxTouchedRef = useRef(false);
 
   const num = (ref: React.RefObject<HTMLInputElement | null>) => Number(ref.current?.value || "0") || 0;
 
-  function updateTotals() {
-    const gross =
-      num(baseSalaryRef) + num(serviceCommissionRef) + num(productCommissionRef) + num(specialAllowanceRef);
-    const deduction = num(employmentInsuranceRef) + num(incomeTaxRef) + num(residentTaxRef);
+  function updateAll() {
+    const gross = num(baseSalaryRef) + num(serviceCommissionRef) + num(productCommissionRef) + num(specialAllowanceRef);
+
+    // 雇用保険は支給合計×料率で自動提案（手入力したら以後は上書きしない）
+    if (!insuranceTouchedRef.current && employmentInsuranceRef.current) {
+      employmentInsuranceRef.current.value = String(Math.round((gross * insuranceRate) / 100));
+    }
+    const insurance = num(employmentInsuranceRef);
+
+    // 所得税は国税庁の源泉徴収税額表（月額表・甲欄・0人）から自動提案（手入力したら以後は上書きしない）
+    if (!incomeTaxTouchedRef.current && incomeTaxRef.current) {
+      incomeTaxRef.current.value = String(calcIncomeTax(gross - insurance));
+    }
+
+    const deduction = insurance + num(incomeTaxRef) + num(residentTaxRef);
     if (grossRef.current) grossRef.current.value = String(gross);
     if (deductionRef.current) deductionRef.current.value = String(deduction);
     if (netRef.current) netRef.current.value = String(gross - deduction);
@@ -98,7 +111,7 @@ export default function SalaryRow(props: Props) {
               defaultValue={props.baseSalary || ""}
               onChange={(e) => {
                 sanitizeAmountInput(e);
-                updateTotals();
+                updateAll();
               }}
             />
           </div>
@@ -114,22 +127,13 @@ export default function SalaryRow(props: Props) {
               defaultValue={props.specialAllowance || ""}
               onChange={(e) => {
                 sanitizeAmountInput(e);
-                updateTotals();
+                updateAll();
               }}
             />
           </div>
 
           <div>
-            <label className="form-label">技術歩合率（%）</label>
-            <input
-              className="field-input"
-              type="text"
-              inputMode="decimal"
-              name="serviceCommissionRate"
-              defaultValue={props.serviceCommissionRate || ""}
-              style={{ marginBottom: 6 }}
-            />
-            <label className="form-label">技術歩合手当（円）</label>
+            <label className="form-label">技術歩合手当（円・任意）</label>
             <input
               ref={serviceCommissionRef}
               className="field-input"
@@ -140,21 +144,12 @@ export default function SalaryRow(props: Props) {
               defaultValue={props.serviceCommission || ""}
               onChange={(e) => {
                 sanitizeAmountInput(e);
-                updateTotals();
+                updateAll();
               }}
             />
           </div>
           <div>
-            <label className="form-label">商品歩合率（%）</label>
-            <input
-              className="field-input"
-              type="text"
-              inputMode="decimal"
-              name="productCommissionRate"
-              defaultValue={props.productCommissionRate || ""}
-              style={{ marginBottom: 6 }}
-            />
-            <label className="form-label">商品歩合手当（円）</label>
+            <label className="form-label">商品歩合手当（円・任意）</label>
             <input
               ref={productCommissionRef}
               className="field-input"
@@ -165,7 +160,7 @@ export default function SalaryRow(props: Props) {
               defaultValue={props.productCommission || ""}
               onChange={(e) => {
                 sanitizeAmountInput(e);
-                updateTotals();
+                updateAll();
               }}
             />
           </div>
@@ -181,7 +176,7 @@ export default function SalaryRow(props: Props) {
             </div>
           </div>
           <div>
-            <label className="form-label">雇用保険（円）</label>
+            <label className="form-label">雇用保険（円・自動提案）</label>
             <input
               ref={employmentInsuranceRef}
               className="field-input"
@@ -192,12 +187,13 @@ export default function SalaryRow(props: Props) {
               defaultValue={props.employmentInsurance || ""}
               onChange={(e) => {
                 sanitizeAmountInput(e);
-                updateTotals();
+                insuranceTouchedRef.current = true;
+                updateAll();
               }}
             />
           </div>
           <div>
-            <label className="form-label">所得税（円・手入力）</label>
+            <label className="form-label">所得税（円・自動提案）</label>
             <input
               ref={incomeTaxRef}
               className="field-input"
@@ -208,7 +204,8 @@ export default function SalaryRow(props: Props) {
               defaultValue={props.incomeTax || ""}
               onChange={(e) => {
                 sanitizeAmountInput(e);
-                updateTotals();
+                incomeTaxTouchedRef.current = true;
+                updateAll();
               }}
             />
           </div>
@@ -224,7 +221,7 @@ export default function SalaryRow(props: Props) {
               defaultValue={props.residentTax || ""}
               onChange={(e) => {
                 sanitizeAmountInput(e);
-                updateTotals();
+                updateAll();
               }}
             />
           </div>

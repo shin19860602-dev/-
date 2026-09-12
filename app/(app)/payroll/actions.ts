@@ -19,8 +19,6 @@ const schema = z.object({
   employmentInsurance: z.string().optional(),
   incomeTax: z.string().optional(),
   residentTax: z.string().optional(),
-  serviceCommissionRate: z.string().optional(),
-  productCommissionRate: z.string().optional(),
   memo: z.string().trim().optional(),
 });
 
@@ -55,46 +53,34 @@ export async function saveSalary(formData: FormData) {
     return { ok: false as const, error: "金額をご確認ください。" };
   }
 
-  const serviceCommissionRate = toRate(data.serviceCommissionRate);
-  const productCommissionRate = toRate(data.productCommissionRate);
-  if (serviceCommissionRate === null || productCommissionRate === null) {
-    return { ok: false as const, error: "歩合率をご確認ください（0〜100の範囲で入力してください）。" };
-  }
-
   const staff = await prisma.staff.findUnique({ where: { id: data.staffId } });
   if (!staff) return { ok: false as const, error: "スタッフが見つかりません。" };
 
-  await prisma.$transaction([
-    prisma.staff.update({
-      where: { id: data.staffId },
-      data: { serviceCommissionRate, productCommissionRate },
-    }),
-    prisma.salary.upsert({
-      where: { staffId_yearMonth: { staffId: data.staffId, yearMonth: data.yearMonth } },
-      update: {
-        baseSalary: baseSalary!,
-        serviceCommission: serviceCommission!,
-        productCommission: productCommission!,
-        specialAllowance: specialAllowance!,
-        employmentInsurance: employmentInsurance!,
-        incomeTax: incomeTax!,
-        residentTax: residentTax!,
-        memo: data.memo || null,
-      },
-      create: {
-        staffId: data.staffId,
-        yearMonth: data.yearMonth,
-        baseSalary: baseSalary!,
-        serviceCommission: serviceCommission!,
-        productCommission: productCommission!,
-        specialAllowance: specialAllowance!,
-        employmentInsurance: employmentInsurance!,
-        incomeTax: incomeTax!,
-        residentTax: residentTax!,
-        memo: data.memo || undefined,
-      },
-    }),
-  ]);
+  await prisma.salary.upsert({
+    where: { staffId_yearMonth: { staffId: data.staffId, yearMonth: data.yearMonth } },
+    update: {
+      baseSalary: baseSalary!,
+      serviceCommission: serviceCommission!,
+      productCommission: productCommission!,
+      specialAllowance: specialAllowance!,
+      employmentInsurance: employmentInsurance!,
+      incomeTax: incomeTax!,
+      residentTax: residentTax!,
+      memo: data.memo || null,
+    },
+    create: {
+      staffId: data.staffId,
+      yearMonth: data.yearMonth,
+      baseSalary: baseSalary!,
+      serviceCommission: serviceCommission!,
+      productCommission: productCommission!,
+      specialAllowance: specialAllowance!,
+      employmentInsurance: employmentInsurance!,
+      incomeTax: incomeTax!,
+      residentTax: residentTax!,
+      memo: data.memo || undefined,
+    },
+  });
 
   revalidatePath("/payroll");
   return { ok: true as const };
