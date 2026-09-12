@@ -12,9 +12,29 @@ const UNLOCK_LOCK_MINUTES = 15;
 const schema = z.object({
   staffId: z.string().min(1),
   yearMonth: z.string().regex(/^\d{4}-\d{2}$/),
-  amount: z.string().optional(),
+  baseSalary: z.string().optional(),
+  serviceCommission: z.string().optional(),
+  productCommission: z.string().optional(),
+  specialAllowance: z.string().optional(),
+  employmentInsurance: z.string().optional(),
+  incomeTax: z.string().optional(),
+  residentTax: z.string().optional(),
+  serviceCommissionRate: z.string().optional(),
+  productCommissionRate: z.string().optional(),
   memo: z.string().trim().optional(),
 });
+
+function toAmount(v?: string): number | null {
+  if (!v) return 0;
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 0 ? n : null;
+}
+
+function toRate(v?: string): number | null {
+  if (!v) return 0;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 && n <= 100 ? n : null;
+}
 
 export async function saveSalary(formData: FormData) {
   const session = await requireSession();
@@ -24,17 +44,79 @@ export async function saveSalary(formData: FormData) {
   if (!parsed.success) return { ok: false as const, error: "入力内容をご確認ください。" };
   const data = parsed.data;
 
-  const amount = data.amount ? Number(data.amount) : 0;
-  if (!Number.isInteger(amount) || amount < 0) return { ok: false as const, error: "金額をご確認ください。" };
+  const baseSalary = toAmount(data.baseSalary);
+  const serviceCommission = toAmount(data.serviceCommission);
+  const productCommission = toAmount(data.productCommission);
+  const specialAllowance = toAmount(data.specialAllowance);
+  const employmentInsurance = toAmount(data.employmentInsurance);
+  const incomeTax = toAmount(data.incomeTax);
+  const residentTax = toAmount(data.residentTax);
+  if ([baseSalary, serviceCommission, productCommission, specialAllowance, employmentInsurance, incomeTax, residentTax].some((v) => v === null)) {
+    return { ok: false as const, error: "金額をご確認ください。" };
+  }
+
+  const serviceCommissionRate = toRate(data.serviceCommissionRate);
+  const productCommissionRate = toRate(data.productCommissionRate);
+  if (serviceCommissionRate === null || productCommissionRate === null) {
+    return { ok: false as const, error: "歩合率をご確認ください（0〜100の範囲で入力してください）。" };
+  }
 
   const staff = await prisma.staff.findUnique({ where: { id: data.staffId } });
   if (!staff) return { ok: false as const, error: "スタッフが見つかりません。" };
 
-  await prisma.salary.upsert({
-    where: { staffId_yearMonth: { staffId: data.staffId, yearMonth: data.yearMonth } },
-    update: { amount, memo: data.memo || null },
-    create: { staffId: data.staffId, yearMonth: data.yearMonth, amount, memo: data.memo || undefined },
-  });
+  await prisma.$transaction([
+    prisma.staff.update({
+      where: { id: data.staffId },
+      data: { serviceCommissionRate, productCommissionRate },
+    }),
+    prisma.salary.upsert({
+      where: { staffId_yearMonth: { staffId: data.staffId, yearMonth: data.yearMonth } },
+      update: {
+        baseSalary: baseSalary!,
+        serviceCommission: serviceCommission!,
+        productCommission: productCommission!,
+        specialAllowance: specialAllowance!,
+        employmentInsurance: employmentInsurance!,
+        incomeTax: incomeTax!,
+        residentTax: residentTax!,
+        memo: data.memo || null,
+      },
+      create: {
+        staffId: data.staffId,
+        yearMonth: data.yearMonth,
+        baseSalary: baseSalary!,
+        serviceCommission: serviceCommission!,
+        productCommission: productCommission!,
+        specialAllowance: specialAllowance!,
+        employmentInsurance: employmentInsurance!,
+        incomeTax: incomeTax!,
+        residentTax: residentTax!,
+        memo: data.memo || undefined,
+      },
+    }),
+  ]);
+
+  revalidatePath("/payroll");
+  return { ok: true as const };
+}
+
+const insuranceRateSchema = z.object({
+  storeId: z.string().min(1),
+  insuranceRate: z.string().min(1),
+});
+
+// オーナーが店舗ごとの雇用保険料率（労働者負担分、%）を設定・変更する
+export async function setInsuranceRate(formData: FormData) {
+  const session = await requireSession();
+  if (!session || session.role !== "OWNER") return { ok: false as const, error: "権限がありません。" };
+
+  const parsed = insuranceRateSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false as const, error: "入力内容をご確認ください。" };
+
+  const rate = toRate(parsed.data.insuranceRate);
+  if (rate === null) return { ok: false as const, error: "料率をご確認ください（0〜100の範囲で入力してください）。" };
+
+  await prisma.store.update({ where: { id: parsed.data.storeId }, data: { insuranceRate: rate } });
 
   revalidatePath("/payroll");
   return { ok: true as const };

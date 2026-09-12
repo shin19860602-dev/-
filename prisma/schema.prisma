@@ -30,6 +30,9 @@ model Store {
   payrollFailedAttempts Int       @default(0)
   payrollLockedUntil    DateTime?
 
+  // 雇用保険料率（労働者負担分、%）。毎年度改定されるためオーナーが更新する。
+  insuranceRate Float @default(0)
+
   staff      Staff[]
   customers  Customer[]
   visits     Visit[]
@@ -57,6 +60,10 @@ model Staff {
   hireDate  DateTime?
   active    Boolean   @default(true)
   createdAt DateTime  @default(now())
+
+  // 歩合手当の計算に使う歩合率（%）。給料画面からオーナーが設定する。
+  serviceCommissionRate Float @default(0) // 技術歩合率
+  productCommissionRate Float @default(0) // 商品歩合率
 
   visits            Visit[]
   primaryCustomers  Customer[] @relation("PrimaryStaff")
@@ -103,15 +110,26 @@ model MenuItem {
   createdAt DateTime @default(now())
 }
 
-// 給与データ（オーナーのみ閲覧・登録できる非公開情報）
+// 給与データ（オーナーのみ登録・編集でき、スタッフは自店舗分のみ閲覧できる非公開情報）
 model Salary {
   id      String @id @default(cuid())
   staffId String
   staff   Staff  @relation(fields: [staffId], references: [id])
 
   yearMonth String // "2026-09" 形式（対象月）
-  amount    Int // 支給額（円）
-  memo      String?
+
+  // 支給
+  baseSalary        Int @default(0) // 基本給
+  serviceCommission Int @default(0) // 技術歩合手当
+  productCommission Int @default(0) // 商品歩合手当
+  specialAllowance  Int @default(0) // 特別手当
+
+  // 控除（所得税・住民税は税額表や自治体からの通知額を参照する必要があり自動計算できないため手入力）
+  employmentInsurance Int @default(0) // 雇用保険
+  incomeTax           Int @default(0) // 所得税
+  residentTax         Int @default(0) // 住民税
+
+  memo String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
