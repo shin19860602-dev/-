@@ -55,6 +55,7 @@ model Staff {
 
   visits            Visit[]
   primaryCustomers  Customer[] @relation("PrimaryStaff")
+  salaries          Salary[]
 }
 
 // お客様（カルテ台帳）
@@ -95,6 +96,22 @@ model MenuItem {
   sortOrder Int      @default(0) // 表示順（店舗・種別ごとに小さい順）。設定画面の並び替えで変更する
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
+}
+
+// 給与データ（オーナーのみ閲覧・登録できる非公開情報）
+model Salary {
+  id      String @id @default(cuid())
+  staffId String
+  staff   Staff  @relation(fields: [staffId], references: [id])
+
+  yearMonth String // "2026-09" 形式（対象月）
+  amount    Int // 支給額（円）
+  memo      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([staffId, yearMonth])
 }
 
 // 来店・施術記録（＝カルテ明細であり、同時に売上明細でもある）
