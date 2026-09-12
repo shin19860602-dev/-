@@ -268,14 +268,25 @@ export default function SalaryRow(props: Props) {
   }
 
   return (
-    <div className="list-row">
+    <div className="list-row" style={{ alignItems: "flex-start" }}>
       <div className="grow">
-        <div className="title">
+        <div className="title" style={{ marginBottom: 6 }}>
           {staffName}
           <span className="card-sub" style={{ margin: 0, marginLeft: 8, display: "inline" }}>
             {storeName}
           </span>
         </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 20px", marginBottom: 6 }}>
+          <div className="meta">基本給　{yen(props.baseSalary)}</div>
+          <div className="meta">雇用保険　{yen(props.employmentInsurance)}</div>
+          <div className="meta">技術歩合手当　{yen(props.serviceCommission)}</div>
+          <div className="meta">所得税　{yen(props.incomeTax)}</div>
+          <div className="meta">商品歩合手当　{yen(props.productCommission)}</div>
+          <div className="meta">住民税　{yen(props.residentTax)}</div>
+          <div className="meta">特別手当　{yen(props.specialAllowance)}</div>
+        </div>
+
         <div className="meta">
           支給合計 {yen(gross)}・控除合計 {yen(deduction)}・差引合計 <strong style={{ color: "var(--text)" }}>{yen(net)}</strong>
           {memo ? `・${memo}` : ""}
