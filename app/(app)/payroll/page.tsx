@@ -4,6 +4,7 @@ import { resolveStoreScope } from "@/lib/scope";
 import { prisma } from "@/lib/prisma";
 import { yen } from "@/lib/analytics";
 import Topbar from "../Topbar";
+import SettingsTabs from "../SettingsTabs";
 import MonthSelect from "../MonthSelect";
 import SalaryRow from "./SalaryRow";
 
@@ -13,19 +14,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   const session = await requireSession();
   if (!session) redirect("/");
 
-  if (session.role !== "OWNER") {
-    return (
-      <>
-        <Topbar title="給料" scopeLabel="-" roleLabel={ROLE_LABEL[session.role!]} />
-        <div className="view">
-          <div className="card card-pad">
-            <div className="card-title">閲覧権限がありません</div>
-            <div className="card-sub">給料データはオーナーのみが閲覧・登録できます。</div>
-          </div>
-        </div>
-      </>
-    );
-  }
+  const canEdit = session.role === "OWNER";
 
   const sp = await searchParams;
   const { storeId, store } = await resolveStoreScope(session, sp.store);
@@ -62,8 +51,9 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
 
   return (
     <>
-      <Topbar title="給料" scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
+      <Topbar title="設定・給料" scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
       <div className="view">
+        <SettingsTabs />
         <div className="filters" style={{ marginBottom: 16 }}>
           <MonthSelect options={monthOptions} current={selectedMonthValue} />
           <div style={{ flex: 1 }} />
@@ -84,6 +74,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
                 yearMonth={selectedMonthValue}
                 amount={salary?.amount ?? null}
                 memo={salary?.memo ?? ""}
+                canEdit={canEdit}
               />
             );
           })}
@@ -95,7 +86,9 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
         </div>
 
         <div className="card-sub" style={{ marginTop: 10 }}>
-          ※給料データはオーナーのみが閲覧できます。スタッフ・マネージャーの画面には表示されません。
+          {canEdit
+            ? "※登録・編集できるのはオーナーのみです。スタッフ・マネージャーの画面には閲覧専用で表示されます。"
+            : "※この店舗のスタッフの給与です（閲覧のみ）。"}
         </div>
       </div>
     </>

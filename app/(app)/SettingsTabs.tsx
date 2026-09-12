@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 const TABS = [
   { href: "/menu", label: "メニュー" },
   { href: "/staff", label: "スタッフ" },
+  { href: "/payroll", label: "給料" },
 ];
 
 export default function SettingsTabs() {

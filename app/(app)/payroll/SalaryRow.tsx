@@ -13,6 +13,7 @@ export default function SalaryRow({
   yearMonth,
   amount,
   memo,
+  canEdit,
 }: {
   staffId: string;
   staffName: string;
@@ -20,13 +21,14 @@ export default function SalaryRow({
   yearMonth: string;
   amount: number | null;
   memo: string;
+  canEdit: boolean;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, startSave] = useTransition();
 
-  if (editing) {
+  if (editing && canEdit) {
     return (
       <form
         className="list-row"
@@ -100,9 +102,11 @@ export default function SalaryRow({
           {memo ? `・${memo}` : ""}
         </div>
       </div>
-      <button type="button" className="btn-ghost" style={{ padding: "5px 12px", fontSize: 11.5 }} onClick={() => setEditing(true)}>
-        {amount != null ? "編集" : "登録"}
-      </button>
+      {canEdit && (
+        <button type="button" className="btn-ghost" style={{ padding: "5px 12px", fontSize: 11.5 }} onClick={() => setEditing(true)}>
+          {amount != null ? "編集" : "登録"}
+        </button>
+      )}
     </div>
   );
 }
