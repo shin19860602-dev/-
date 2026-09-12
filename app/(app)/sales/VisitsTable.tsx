@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateVisit, deleteVisit } from "./actions";
 import { yen, visitTotal } from "@/lib/analytics";
-import { sanitizeDigits } from "@/lib/format";
+import { sanitizeAmountInput } from "@/lib/format";
 
 const BADGE_CLASS: Record<string, string> = { a: "badge-store-a", b: "badge-store-b", c: "badge-store-c" };
 const PAYMENT_LABEL: Record<string, string> = { cash: "現金", credit: "クレジット" };
@@ -155,9 +155,7 @@ function EditRow({ visit, colSpan, onDone }: { visit: Visit; colSpan: number; on
               pattern="[0-9]*"
               defaultValue={visit.amount}
               required
-              onChange={(e) => {
-                e.target.value = sanitizeDigits(e.target.value);
-              }}
+              onChange={sanitizeAmountInput}
             />
           </div>
           <div>
@@ -169,9 +167,7 @@ function EditRow({ visit, colSpan, onDone }: { visit: Visit; colSpan: number; on
               inputMode="numeric"
               pattern="[0-9]*"
               defaultValue={visit.pointAmount ?? ""}
-              onChange={(e) => {
-                e.target.value = sanitizeDigits(e.target.value);
-              }}
+              onChange={sanitizeAmountInput}
             />
           </div>
           <div>
@@ -187,9 +183,7 @@ function EditRow({ visit, colSpan, onDone }: { visit: Visit; colSpan: number; on
               inputMode="numeric"
               pattern="[0-9]*"
               defaultValue={visit.productAmount ?? ""}
-              onChange={(e) => {
-                e.target.value = sanitizeDigits(e.target.value);
-              }}
+              onChange={sanitizeAmountInput}
             />
           </div>
           <div>

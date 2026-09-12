@@ -4,7 +4,7 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createVisit } from "./actions";
 import CustomerCombobox from "./CustomerCombobox";
-import { sanitizeDigits } from "@/lib/format";
+import { sanitizeAmountInput } from "@/lib/format";
 
 type Store = { id: string; name: string; colorKey: string };
 type Customer = { id: string; name: string; storeId: string };
@@ -240,7 +240,7 @@ export default function NewSaleForm({
                 placeholder="金額"
                 style={{ width: 110 }}
                 onChange={(e) => {
-                  e.target.value = sanitizeDigits(e.target.value);
+                  sanitizeAmountInput(e);
                   updateTechnicalTotal();
                 }}
               />
@@ -293,7 +293,7 @@ export default function NewSaleForm({
                 placeholder="金額"
                 style={{ width: 110 }}
                 onChange={(e) => {
-                  e.target.value = sanitizeDigits(e.target.value);
+                  sanitizeAmountInput(e);
                   updateTechnicalTotal();
                 }}
               />
@@ -312,9 +312,7 @@ export default function NewSaleForm({
               inputMode="numeric"
               pattern="[0-9]*"
               name="pointAmount"
-              onChange={(e) => {
-                e.target.value = sanitizeDigits(e.target.value);
-              }}
+              onChange={sanitizeAmountInput}
             />
           </div>
 
@@ -361,9 +359,7 @@ export default function NewSaleForm({
               inputMode="numeric"
               pattern="[0-9]*"
               name="productAmount"
-              onChange={(e) => {
-                e.target.value = sanitizeDigits(e.target.value);
-              }}
+              onChange={sanitizeAmountInput}
             />
           </div>
 

@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createMenuItem } from "./actions";
-import { sanitizeDigits } from "@/lib/format";
+import { sanitizeAmountInput } from "@/lib/format";
 
 const PLACEHOLDER: Record<"service" | "menu" | "product", string> = {
   service: "新しいクーポン名",
@@ -46,9 +46,7 @@ export default function AddMenuItemForm({ storeId, type }: { storeId: string; ty
         placeholder="金額"
         required
         style={{ width: 110 }}
-        onChange={(e) => {
-          e.target.value = sanitizeDigits(e.target.value);
-        }}
+        onChange={sanitizeAmountInput}
       />
       <button className="btn-primary" type="submit" disabled={pending} style={{ whiteSpace: "nowrap" }}>
         追加

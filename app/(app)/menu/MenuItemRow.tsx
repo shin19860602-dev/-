@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setMenuItemActive, updateMenuItem, deleteMenuItem, moveMenuItem } from "./actions";
 import { yen } from "@/lib/analytics";
-import { sanitizeDigits } from "@/lib/format";
+import { sanitizeAmountInput } from "@/lib/format";
 
 export default function MenuItemRow({
   id,
@@ -60,9 +60,7 @@ export default function MenuItemRow({
           defaultValue={price}
           required
           style={{ width: 110 }}
-          onChange={(e) => {
-            e.target.value = sanitizeDigits(e.target.value);
-          }}
+          onChange={sanitizeAmountInput}
         />
         <button className="btn-primary" type="submit" disabled={saving} style={{ padding: "5px 12px", fontSize: 11.5 }}>
           {saving ? "保存中…" : "保存"}

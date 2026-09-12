@@ -10,3 +10,10 @@ export function sanitizeDigits(value: string): string {
   const halfWidth = value.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
   return halfWidth.replace(/[^0-9]/g, "");
 }
+
+// 金額入力欄のonChangeで使う共通ハンドラ。
+// IME変換中（全角数字入力など）にvalueを書き換えると文字が二重に入力されるため、変換確定後だけ半角化する。
+export function sanitizeAmountInput(e: { target: HTMLInputElement; nativeEvent: Event }) {
+  if (e.nativeEvent instanceof InputEvent && e.nativeEvent.isComposing) return;
+  e.target.value = sanitizeDigits(e.target.value);
+}
