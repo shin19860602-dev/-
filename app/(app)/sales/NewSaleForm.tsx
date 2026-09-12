@@ -31,6 +31,8 @@ export default function NewSaleForm({
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const amountRef = useRef<HTMLInputElement>(null);
+  const couponAmountRef = useRef<HTMLInputElement>(null);
+  const menuAmountRef = useRef<HTMLInputElement>(null);
   const productAmountRef = useRef<HTMLInputElement>(null);
   const kanaRef = useRef<HTMLInputElement>(null);
   const kanaTouchedRef = useRef(false);
@@ -52,6 +54,13 @@ export default function NewSaleForm({
   const customerOptions = useMemo(() => customers.filter((c) => c.storeId === storeId), [customers, storeId]);
   const serviceOptions = useMemo(() => serviceMenus.filter((m) => m.storeId === storeId), [serviceMenus, storeId]);
   const productOptions = useMemo(() => productMenus.filter((m) => m.storeId === storeId), [productMenus, storeId]);
+
+  // 技術売上＝クーポン金額＋メニュー金額の合計（表示のみ。実際の保存額はサーバー側で再計算する）
+  function updateTechnicalTotal() {
+    const coupon = Number(couponAmountRef.current?.value || "0") || 0;
+    const menu = Number(menuAmountRef.current?.value || "0") || 0;
+    if (amountRef.current) amountRef.current.value = String(coupon + menu);
+  }
 
   return (
     <div className="card card-pad" style={{ marginBottom: 16 }}>
@@ -78,6 +87,7 @@ export default function NewSaleForm({
               kanaTouchedRef.current = false;
               kanaBufferRef.current = "";
               lastHiraganaRef.current = "";
+              if (amountRef.current) amountRef.current.value = "";
               setFormKey((k) => k + 1);
               setJustSaved(true);
               router.refresh();
@@ -180,8 +190,29 @@ export default function NewSaleForm({
           </div>
 
           <div style={{ gridColumn: "span 2" }}>
+            <label className="form-label">クーポン（任意）</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input className="field-input" name="couponName" placeholder="例：似合わせカット＋カラークーポン" style={{ flex: 1 }} />
+              <input
+                ref={couponAmountRef}
+                className="field-input"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                name="couponAmount"
+                placeholder="金額"
+                style={{ width: 110 }}
+                onChange={(e) => {
+                  e.target.value = sanitizeDigits(e.target.value);
+                  updateTechnicalTotal();
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ gridColumn: "span 2" }}>
             <label className="form-label">
-              施術メニュー
+              メニュー（任意）
               <button
                 type="button"
                 onClick={() => setServiceCustom((v) => !v)}
@@ -190,44 +221,51 @@ export default function NewSaleForm({
                 {serviceCustom ? "一覧から選ぶ" : "自由入力に切替"}
               </button>
             </label>
-            {serviceCustom || serviceOptions.length === 0 ? (
-              <input className="field-input" name="menuName" placeholder="例：カット＋カラー" required />
-            ) : (
-              <select
-                className="field-select"
-                name="menuName"
-                required
-                defaultValue=""
+            <div style={{ display: "flex", gap: 8 }}>
+              {serviceCustom || serviceOptions.length === 0 ? (
+                <input className="field-input" name="menuName" placeholder="例：カット＋カラー" style={{ flex: 1 }} />
+              ) : (
+                <select
+                  className="field-select"
+                  name="menuName"
+                  defaultValue=""
+                  style={{ flex: 1 }}
+                  onChange={(e) => {
+                    const item = serviceOptions.find((m) => m.name === e.target.value);
+                    if (item && menuAmountRef.current) {
+                      menuAmountRef.current.value = String(item.price);
+                      updateTechnicalTotal();
+                    }
+                  }}
+                >
+                  <option value="">選択しない</option>
+                  {serviceOptions.map((m) => (
+                    <option key={m.id} value={m.name}>
+                      {m.name}（¥{m.price.toLocaleString("ja-JP")}）
+                    </option>
+                  ))}
+                </select>
+              )}
+              <input
+                ref={menuAmountRef}
+                className="field-input"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                name="menuAmount"
+                placeholder="金額"
+                style={{ width: 110 }}
                 onChange={(e) => {
-                  const item = serviceOptions.find((m) => m.name === e.target.value);
-                  if (item && amountRef.current) amountRef.current.value = String(item.price);
+                  e.target.value = sanitizeDigits(e.target.value);
+                  updateTechnicalTotal();
                 }}
-              >
-                <option value="" disabled>
-                  選択してください
-                </option>
-                {serviceOptions.map((m) => (
-                  <option key={m.id} value={m.name}>
-                    {m.name}（¥{m.price.toLocaleString("ja-JP")}）
-                  </option>
-                ))}
-              </select>
-            )}
+              />
+            </div>
           </div>
+
           <div>
-            <label className="form-label">技術売上（円）</label>
-            <input
-              ref={amountRef}
-              className="field-input"
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              name="amount"
-              required
-              onChange={(e) => {
-                e.target.value = sanitizeDigits(e.target.value);
-              }}
-            />
+            <label className="form-label">技術売上合計（円）</label>
+            <input ref={amountRef} className="field-input" type="text" readOnly style={{ background: "var(--surface-muted)" }} />
           </div>
           <div>
             <label className="form-label">ポイント売上（円・任意）</label>

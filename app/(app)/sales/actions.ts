@@ -12,8 +12,10 @@ const schema = z.object({
   newCustomerName: z.string().trim().min(1).optional(),
   newCustomerKana: z.string().trim().optional(),
   newCustomerGender: z.enum(["male", "female", "other"]).optional(),
-  menuName: z.string().trim().min(1),
-  amount: z.coerce.number().int().positive(),
+  couponName: z.string().trim().optional(),
+  couponAmount: z.string().optional(),
+  menuName: z.string().trim().optional(),
+  menuAmount: z.string().optional(),
   pointAmount: z.string().optional(),
   productName: z.string().trim().optional(),
   productAmount: z.string().optional(),
@@ -38,6 +40,27 @@ export async function createVisit(formData: FormData) {
   if (productAmount !== undefined && (!Number.isInteger(productAmount) || productAmount <= 0)) {
     return { ok: false as const, error: "店販の金額をご確認ください。" };
   }
+
+  // クーポンとメニューはそれぞれ任意だが、名前と金額はセットで入力する（技術売上＝両者の合計）
+  const couponName = data.couponName || undefined;
+  const couponAmount = data.couponAmount ? Number(data.couponAmount) : undefined;
+  if (couponName && !couponAmount) return { ok: false as const, error: "クーポンの金額を入力してください。" };
+  if (!couponName && couponAmount) return { ok: false as const, error: "クーポンのメニュー名を入力してください。" };
+  if (couponAmount !== undefined && (!Number.isInteger(couponAmount) || couponAmount <= 0)) {
+    return { ok: false as const, error: "クーポンの金額をご確認ください。" };
+  }
+
+  const menuName = data.menuName || undefined;
+  const menuAmount = data.menuAmount ? Number(data.menuAmount) : undefined;
+  if (menuName && !menuAmount) return { ok: false as const, error: "メニューの金額を入力してください。" };
+  if (!menuName && menuAmount) return { ok: false as const, error: "メニューの名前を入力してください。" };
+  if (menuAmount !== undefined && (!Number.isInteger(menuAmount) || menuAmount <= 0)) {
+    return { ok: false as const, error: "メニューの金額をご確認ください。" };
+  }
+
+  const amount = (couponAmount ?? 0) + (menuAmount ?? 0);
+  if (amount <= 0) return { ok: false as const, error: "クーポンまたはメニューを入力してください。" };
+  const combinedMenuName = [couponName, menuName].filter(Boolean).join("／");
 
   const pointAmount = data.pointAmount ? Number(data.pointAmount) : undefined;
   if (pointAmount !== undefined && (!Number.isInteger(pointAmount) || pointAmount <= 0)) {
@@ -73,8 +96,8 @@ export async function createVisit(formData: FormData) {
       staffId,
       customerId: customer.id,
       date,
-      menuName: data.menuName,
-      amount: data.amount,
+      menuName: combinedMenuName,
+      amount,
       pointAmount,
       productName,
       productAmount,
