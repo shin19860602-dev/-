@@ -22,7 +22,7 @@ export default function KarteSearch() {
         <path d="M21 21l-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       </svg>
       <input
-        placeholder="お客様名で検索"
+        placeholder="お客様名・ふりがなで検索"
         defaultValue={searchParams.get("q") ?? ""}
         onChange={(e) => onChange(e.target.value)}
       />

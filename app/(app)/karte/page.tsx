@@ -28,7 +28,7 @@ export default async function KartePage({
     where: {
       storeId: storeId ?? undefined,
       active: true,
-      name: sp.q ? { contains: sp.q } : undefined,
+      ...(sp.q ? { OR: [{ name: { contains: sp.q } }, { kana: { contains: sp.q } }] } : {}),
     },
     include: { store: true, visits: { select: { date: true }, orderBy: { date: "desc" }, take: 1 } },
     orderBy: { name: "asc" },
