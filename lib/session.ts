@@ -10,6 +10,8 @@ export interface SessionData {
   role?: Role;
   name?: string;
   title?: string | null;
+  // 給料閲覧用パスワードを入力し、閲覧を許可された店舗ID（オーナーは常に閲覧可のため使わない）
+  payrollUnlockedStoreId?: string;
 }
 
 const sessionOptions: SessionOptions = {

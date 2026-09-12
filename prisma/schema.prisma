@@ -25,6 +25,11 @@ model Store {
   pinFailedAttempts Int       @default(0)
   pinLockedUntil    DateTime?
 
+  // 給料閲覧用パスワード（ハッシュ化）。スタッフが自店舗の給料を見る際、追加で入力する。
+  payrollPassword       String?
+  payrollFailedAttempts Int       @default(0)
+  payrollLockedUntil    DateTime?
+
   staff      Staff[]
   customers  Customer[]
   visits     Visit[]

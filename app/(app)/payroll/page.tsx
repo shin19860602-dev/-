@@ -7,6 +7,8 @@ import Topbar from "../Topbar";
 import SettingsTabs from "../SettingsTabs";
 import MonthSelect from "../MonthSelect";
 import SalaryRow from "./SalaryRow";
+import PayrollPasswordGate from "./PayrollPasswordGate";
+import PayrollPasswordForm from "./PayrollPasswordForm";
 
 const ROLE_LABEL: Record<string, string> = { OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 
@@ -19,6 +21,20 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   const sp = await searchParams;
   const { storeId, store } = await resolveStoreScope(session, sp.store);
   const scopeLabel = store ? store.name : "全店舗";
+
+  // スタッフ・マネージャーは、自店舗のパスワードを入力するまで中身を見せない
+  const unlocked = canEdit || session.payrollUnlockedStoreId === storeId;
+  if (!unlocked) {
+    return (
+      <>
+        <Topbar title="設定・給料" scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
+        <div className="view">
+          <SettingsTabs />
+          <PayrollPasswordGate storeId={storeId!} />
+        </div>
+      </>
+    );
+  }
 
   const now = new Date();
   const monthOptions: { value: string; label: string }[] = [];
@@ -49,11 +65,32 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   const salaryByStaff = new Map(salaries.map((s) => [s.staffId, s]));
   const totalAmount = salaries.reduce((a, s) => a + s.amount, 0);
 
+  const passwordStores = canEdit
+    ? await prisma.store.findMany({
+        where: storeId ? { id: storeId } : undefined,
+        orderBy: { createdAt: "asc" },
+        select: { id: true, name: true, payrollPassword: true },
+      })
+    : [];
+
   return (
     <>
       <Topbar title="設定・給料" scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
       <div className="view">
         <SettingsTabs />
+
+        {canEdit && (
+          <div className="card card-pad" style={{ marginBottom: 16 }}>
+            <div className="card-title">給料閲覧用パスワード</div>
+            <div className="card-sub">スタッフ・マネージャーが自店舗の給料を見る際に入力するパスワードです。店舗ごとに設定できます。</div>
+            <div>
+              {passwordStores.map((s) => (
+                <PayrollPasswordForm key={s.id} storeId={s.id} storeName={s.name} isSet={!!s.payrollPassword} />
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="filters" style={{ marginBottom: 16 }}>
           <MonthSelect options={monthOptions} current={selectedMonthValue} />
           <div style={{ flex: 1 }} />
@@ -87,7 +124,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
 
         <div className="card-sub" style={{ marginTop: 10 }}>
           {canEdit
-            ? "※登録・編集できるのはオーナーのみです。スタッフ・マネージャーの画面には閲覧専用で表示されます。"
+            ? "※登録・編集できるのはオーナーのみです。スタッフ・マネージャーの画面にはパスワード入力後、閲覧専用で表示されます。"
             : "※この店舗のスタッフの給与です（閲覧のみ）。"}
         </div>
       </div>
