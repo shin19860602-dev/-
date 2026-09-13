@@ -148,6 +148,7 @@ model Visit {
   date       DateTime
   menuName   String // 施術メニュー（例: カット＋カラー）
   amount     Int // 施術の金額（円）
+  category   String? // 集計・分析のカテゴリ別売上構成比に使う分類（例: カット、カラー）。店舗の業態ごとに選択肢が異なる。任意項目。
   pointAmount   Int? // ポイント売上（円）
   productName   String? // 店販した商品名（例: シャンプー）
   productAmount Int? // 店販の金額（円）

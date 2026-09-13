@@ -7,15 +7,6 @@ import Topbar from "../Topbar";
 import LineChart from "../charts/LineChart";
 import BarList from "../charts/BarList";
 
-const CATEGORY_RULES: { key: string; label: string; match: (menu: string) => boolean }[] = [
-  { key: "cut", label: "カット", match: (m) => m.includes("カット") && !m.includes("カラー") && !m.includes("パーマ") },
-  { key: "color", label: "カラー", match: (m) => m.includes("カラー") },
-  { key: "perm", label: "パーマ", match: (m) => m.includes("パーマ") && !m.includes("まつ毛") },
-  { key: "treatment", label: "トリートメント／ヘッドスパ", match: (m) => m.includes("トリートメント") || m.includes("ヘッドスパ") },
-  { key: "lash", label: "まつ毛エクステ・パーマ", match: (m) => m.includes("まつ毛") },
-  { key: "other", label: "その他", match: () => true },
-];
-
 export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<{ store?: string }> }) {
   const session = await requireSession();
   if (!session) redirect("/");
@@ -46,7 +37,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   const [thisMonthVisits, allStores, lastMonthByStore, lastYearByStore] = await Promise.all([
     prisma.visit.findMany({
       where: { storeId: storeId ?? undefined, date: { gte: thisMonth.start, lt: thisMonth.end } },
-      select: { menuName: true, amount: true, productAmount: true, pointAmount: true, storeId: true },
+      select: { menuName: true, category: true, amount: true, productAmount: true, pointAmount: true, storeId: true },
     }),
     prisma.store.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.visit.findMany({
@@ -59,26 +50,18 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
     }),
   ]);
 
-  // カテゴリ別売上構成比（施術メニューは種類別、店販・ポイントはまとめて1カテゴリずつ）
+  // カテゴリ別売上構成比（売上登録時に選んだ分類ごと。店販は別項目として合算する。ポイントは売上区分であってカテゴリではないため含めない）
   const categoryTotals = new Map<string, number>();
   let productTotal = 0;
-  let pointTotal = 0;
   for (const v of thisMonthVisits) {
-    const cat = CATEGORY_RULES.find((r) => r.match(v.menuName))!;
-    categoryTotals.set(cat.key, (categoryTotals.get(cat.key) ?? 0) + v.amount);
+    const key = v.category || "未分類";
+    categoryTotals.set(key, (categoryTotals.get(key) ?? 0) + v.amount);
     productTotal += v.productAmount ?? 0;
-    pointTotal += v.pointAmount ?? 0;
   }
-  if (productTotal > 0) categoryTotals.set("product", productTotal);
-  if (pointTotal > 0) categoryTotals.set("point", pointTotal);
+  if (productTotal > 0) categoryTotals.set("店販", productTotal);
   const categoryTotal = [...categoryTotals.values()].reduce((a, v) => a + v, 0) || 1;
-  const CATEGORY_LABELS: Record<string, string> = {
-    product: "店販",
-    point: "ポイント",
-    ...Object.fromEntries(CATEGORY_RULES.map((r) => [r.key, r.label])),
-  };
-  const categoryBars = [...categoryTotals.keys()]
-    .map((key) => ({ key, label: CATEGORY_LABELS[key], color: "var(--accent)", value: categoryTotals.get(key)! }))
+  const categoryBars = [...categoryTotals.entries()]
+    .map(([key, value]) => ({ key, label: key, color: "var(--accent)", value }))
     .sort((a, b) => b.value - a.value);
 
   // リピート率推移（6ヶ月）

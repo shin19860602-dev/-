@@ -6,12 +6,26 @@ import { createVisit } from "./actions";
 import CustomerCombobox from "./CustomerCombobox";
 import { sanitizeAmountInput } from "@/lib/format";
 
-type Store = { id: string; name: string; colorKey: string };
+type Store = { id: string; name: string; colorKey: string; kind: string };
 type Customer = { id: string; name: string; storeId: string };
 type MenuItem = { id: string; name: string; price: number; storeId: string };
 
 // IME変換前（ひらがな入力中）の文字列だけを拾う。漢字から読みを推測するより、実際にタイプされたかなの方が正確。
 const HIRAGANA_RE = /^[ぁ-ゖー]+$/;
+
+// 集計・分析のカテゴリ別売上構成比に使う分類。店舗の業態ごとに選択肢が異なる（店販は別項目で金額を集計するためここには含めない）。
+const SALON_CATEGORIES = ["カット", "カラー", "パーマ", "縮毛矯正", "トリートメント", "その他"];
+const LASH_CATEGORIES = [
+  "つけ放題",
+  "リペア",
+  "LEDつけ放題",
+  "LEDリペア",
+  "下まつ毛エクステ",
+  "まつ毛パーマ",
+  "下まつ毛パーマ",
+  "ヘアカラー",
+  "トリートメント",
+];
 
 export default function NewSaleForm({
   isOwner,
@@ -41,6 +55,7 @@ export default function NewSaleForm({
   const kanaBufferRef = useRef("");
   const lastHiraganaRef = useRef("");
   const [storeId, setStoreId] = useState(fixedStoreId ?? stores[0]?.id ?? "");
+  const [category, setCategory] = useState<string | null>(null);
   const [customerMode, setCustomerMode] = useState<"existing" | "new">("existing");
   const [couponCustom, setCouponCustom] = useState(false);
   const [menuCustom, setMenuCustom] = useState(false);
@@ -54,6 +69,8 @@ export default function NewSaleForm({
   const today = new Date();
   const defaultDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
+  const selectedStore = useMemo(() => stores.find((s) => s.id === storeId), [stores, storeId]);
+  const categoryOptions = selectedStore?.kind === "LASH" ? LASH_CATEGORIES : SALON_CATEGORIES;
   const customerOptions = useMemo(() => customers.filter((c) => c.storeId === storeId), [customers, storeId]);
   const couponOptions = useMemo(() => couponMenus.filter((m) => m.storeId === storeId), [couponMenus, storeId]);
   const menuOptions = useMemo(() => menuMenus.filter((m) => m.storeId === storeId), [menuMenus, storeId]);
@@ -88,6 +105,7 @@ export default function NewSaleForm({
               setCouponCustom(false);
               setMenuCustom(false);
               setProductCustom(false);
+              setCategory(null);
               setPaymentMethod("cash");
               kanaTouchedRef.current = false;
               kanaBufferRef.current = "";
@@ -106,7 +124,15 @@ export default function NewSaleForm({
           {isOwner && !fixedStoreId ? (
             <div style={{ gridColumn: "span 2" }}>
               <label className="form-label">店舗</label>
-              <select className="field-select" name="storeId" value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+              <select
+                className="field-select"
+                name="storeId"
+                value={storeId}
+                onChange={(e) => {
+                  setStoreId(e.target.value);
+                  setCategory(null);
+                }}
+              >
                 {stores.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -297,6 +323,24 @@ export default function NewSaleForm({
                   updateTechnicalTotal();
                 }}
               />
+            </div>
+          </div>
+
+          <div style={{ gridColumn: "span 2" }}>
+            <label className="form-label">分類（任意・集計に使用）</label>
+            <input type="hidden" name="category" value={category ?? ""} />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {categoryOptions.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={category === c ? "btn-primary" : "btn-ghost"}
+                  style={{ padding: "6px 12px", fontSize: 12 }}
+                  onClick={() => setCategory((cur) => (cur === c ? null : c))}
+                >
+                  {c}
+                </button>
+              ))}
             </div>
           </div>
 

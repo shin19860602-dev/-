@@ -84,7 +84,7 @@ export default async function SalesPage({
         <NewSaleForm
           isOwner={session.role === "OWNER"}
           fixedStoreId={storeId}
-          stores={allStores.map((s) => ({ id: s.id, name: s.name, colorKey: s.colorKey }))}
+          stores={allStores.map((s) => ({ id: s.id, name: s.name, colorKey: s.colorKey, kind: s.kind }))}
           customers={allCustomers.map((c) => ({ id: c.id, name: c.name, storeId: c.storeId }))}
           couponMenus={couponMenus}
           menuMenus={menuMenus}
