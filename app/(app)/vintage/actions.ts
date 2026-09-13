@@ -120,3 +120,118 @@ export async function deleteVintageSale(saleId: string) {
   revalidatePath("/vintage");
   return { ok: true as const };
 }
+
+const createTagSchema = z.object({
+  storeId: z.string().min(1),
+  kind: z.enum(["category", "brand"]),
+  name: z.string().trim().min(1),
+});
+
+async function canManageTags(storeId: string) {
+  const session = await requireSession();
+  if (!session) return null;
+  if (session.role !== "OWNER" && session.role !== "MANAGER") return null;
+  if (session.role === "MANAGER" && session.storeId !== storeId) return null;
+  return session;
+}
+
+function revalidateVintagePaths() {
+  revalidatePath("/vintage");
+  revalidatePath("/vintage/dashboard");
+  revalidatePath("/vintage/settings");
+}
+
+export async function createVintageTag(formData: FormData) {
+  const parsed = createTagSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false as const, error: "入力内容をご確認ください。" };
+  const data = parsed.data;
+
+  const session = await canManageTags(data.storeId);
+  if (!session) return { ok: false as const, error: "権限がありません。" };
+
+  const last = await prisma.vintageTag.findFirst({
+    where: { storeId: data.storeId, kind: data.kind },
+    orderBy: { sortOrder: "desc" },
+  });
+
+  await prisma.vintageTag.create({
+    data: { storeId: data.storeId, kind: data.kind, name: data.name, sortOrder: (last?.sortOrder ?? -1) + 1 },
+  });
+
+  revalidateVintagePaths();
+  return { ok: true as const };
+}
+
+export async function setVintageTagActive(id: string, active: boolean) {
+  const tag = await prisma.vintageTag.findUnique({ where: { id } });
+  if (!tag) return { ok: false as const, error: "見つかりません。" };
+
+  const session = await canManageTags(tag.storeId);
+  if (!session) return { ok: false as const, error: "権限がありません。" };
+
+  await prisma.vintageTag.update({ where: { id }, data: { active } });
+
+  revalidateVintagePaths();
+  return { ok: true as const };
+}
+
+const updateTagSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().trim().min(1),
+});
+
+export async function updateVintageTag(formData: FormData) {
+  const parsed = updateTagSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false as const, error: "入力内容をご確認ください。" };
+  const data = parsed.data;
+
+  const tag = await prisma.vintageTag.findUnique({ where: { id: data.id } });
+  if (!tag) return { ok: false as const, error: "見つかりません。" };
+
+  const session = await canManageTags(tag.storeId);
+  if (!session) return { ok: false as const, error: "権限がありません。" };
+
+  await prisma.vintageTag.update({ where: { id: data.id }, data: { name: data.name } });
+
+  revalidateVintagePaths();
+  return { ok: true as const };
+}
+
+export async function moveVintageTag(id: string, direction: "up" | "down") {
+  const tag = await prisma.vintageTag.findUnique({ where: { id } });
+  if (!tag) return { ok: false as const, error: "見つかりません。" };
+
+  const session = await canManageTags(tag.storeId);
+  if (!session) return { ok: false as const, error: "権限がありません。" };
+
+  const neighbor = await prisma.vintageTag.findFirst({
+    where: {
+      storeId: tag.storeId,
+      kind: tag.kind,
+      sortOrder: direction === "up" ? { lt: tag.sortOrder } : { gt: tag.sortOrder },
+    },
+    orderBy: { sortOrder: direction === "up" ? "desc" : "asc" },
+  });
+  if (!neighbor) return { ok: true as const };
+
+  await prisma.$transaction([
+    prisma.vintageTag.update({ where: { id: tag.id }, data: { sortOrder: neighbor.sortOrder } }),
+    prisma.vintageTag.update({ where: { id: neighbor.id }, data: { sortOrder: tag.sortOrder } }),
+  ]);
+
+  revalidateVintagePaths();
+  return { ok: true as const };
+}
+
+export async function deleteVintageTag(id: string) {
+  const tag = await prisma.vintageTag.findUnique({ where: { id } });
+  if (!tag) return { ok: false as const, error: "見つかりません。" };
+
+  const session = await canManageTags(tag.storeId);
+  if (!session) return { ok: false as const, error: "権限がありません。" };
+
+  await prisma.vintageTag.delete({ where: { id } });
+
+  revalidateVintagePaths();
+  return { ok: true as const };
+}

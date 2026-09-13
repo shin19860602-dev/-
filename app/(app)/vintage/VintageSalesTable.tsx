@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { updateVintageSale, deleteVintageSale } from "./actions";
 import { yen } from "@/lib/analytics";
 import { sanitizeAmountInput } from "@/lib/format";
-import { VINTAGE_CATEGORIES, VINTAGE_BRANDS } from "@/lib/categories";
 
 const PAYMENT_LABEL: Record<string, string> = { cash: "現金", credit: "クレジット" };
 const dateLabel = (d: Date) => `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
@@ -23,7 +22,17 @@ type Sale = {
   staff: { name: string };
 };
 
-export default function VintageSalesTable({ sales, canEdit }: { sales: Sale[]; canEdit: boolean }) {
+export default function VintageSalesTable({
+  sales,
+  canEdit,
+  categories,
+  brands,
+}: {
+  sales: Sale[];
+  canEdit: boolean;
+  categories: string[];
+  brands: string[];
+}) {
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -45,7 +54,14 @@ export default function VintageSalesTable({ sales, canEdit }: { sales: Sale[]; c
         <tbody>
           {sales.map((s) =>
             editingId === s.id ? (
-              <EditRow key={s.id} sale={s} colSpan={canEdit ? 8 : 7} onDone={() => setEditingId(null)} />
+              <EditRow
+                key={s.id}
+                sale={s}
+                colSpan={canEdit ? 8 : 7}
+                categories={categories}
+                brands={brands}
+                onDone={() => setEditingId(null)}
+              />
             ) : (
               <tr key={s.id}>
                 <td data-label="日付">{dateLabel(s.date)}</td>
@@ -106,7 +122,19 @@ function DeleteButton({ saleId, onDone }: { saleId: string; onDone: () => void }
   );
 }
 
-function EditRow({ sale, colSpan, onDone }: { sale: Sale; colSpan: number; onDone: () => void }) {
+function EditRow({
+  sale,
+  colSpan,
+  categories,
+  brands,
+  onDone,
+}: {
+  sale: Sale;
+  colSpan: number;
+  categories: string[];
+  brands: string[];
+  onDone: () => void;
+}) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "credit">((sale.paymentMethod as "cash" | "credit") ?? "cash");
@@ -181,7 +209,7 @@ function EditRow({ sale, colSpan, onDone }: { sale: Sale; colSpan: number; onDon
             <label className="form-label">分類（任意）</label>
             <input type="hidden" name="category" value={category ?? ""} />
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {VINTAGE_CATEGORIES.map((c) => (
+              {categories.map((c) => (
                 <button
                   key={c}
                   type="button"
@@ -198,7 +226,7 @@ function EditRow({ sale, colSpan, onDone }: { sale: Sale; colSpan: number; onDon
             <label className="form-label">ブランド（任意）</label>
             <input type="hidden" name="brand" value={brand ?? ""} />
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {VINTAGE_BRANDS.map((b) => (
+              {brands.map((b) => (
                 <button
                   key={b}
                   type="button"

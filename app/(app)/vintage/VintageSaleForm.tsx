@@ -3,10 +3,17 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createVintageSale } from "./actions";
-import { VINTAGE_CATEGORIES, VINTAGE_BRANDS } from "@/lib/categories";
 import { sanitizeAmountInput } from "@/lib/format";
 
-export default function VintageSaleForm({ storeId }: { storeId: string }) {
+export default function VintageSaleForm({
+  storeId,
+  categories,
+  brands,
+}: {
+  storeId: string;
+  categories: string[];
+  brands: string[];
+}) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [category, setCategory] = useState<string | null>(null);
@@ -66,7 +73,7 @@ export default function VintageSaleForm({ storeId }: { storeId: string }) {
             <label className="form-label">分類（任意）</label>
             <input type="hidden" name="category" value={category ?? ""} />
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {VINTAGE_CATEGORIES.map((c) => (
+              {categories.map((c) => (
                 <button
                   key={c}
                   type="button"
@@ -84,7 +91,7 @@ export default function VintageSaleForm({ storeId }: { storeId: string }) {
             <label className="form-label">ブランド（任意）</label>
             <input type="hidden" name="brand" value={brand ?? ""} />
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {VINTAGE_BRANDS.map((b) => (
+              {brands.map((b) => (
                 <button
                   key={b}
                   type="button"

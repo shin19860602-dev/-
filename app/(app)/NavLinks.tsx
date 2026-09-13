@@ -10,7 +10,13 @@ const ANALYTICS = { href: "/analytics", label: "集計・分析", Icon: Analytic
 const DASHBOARD = { href: "/dashboard", label: "ダッシュボード", Icon: DashboardIcon, ownerOnly: false, group: ["/dashboard"] };
 const SETTINGS = { href: "/menu", label: "設定", Icon: SettingsIcon, ownerOnly: false, group: ["/staff", "/menu", "/payroll"] };
 const PAYROLL = { href: "/payroll", label: "給料", Icon: PayrollIcon, ownerOnly: true, group: ["/payroll"] };
-const VINTAGE = { href: "/vintage", label: "古着", Icon: VintageIcon, ownerOnly: false, group: ["/vintage"] };
+const VINTAGE = {
+  href: "/vintage",
+  label: "古着",
+  Icon: VintageIcon,
+  ownerOnly: false,
+  group: ["/vintage", "/vintage/dashboard", "/vintage/settings"],
+};
 
 // スタッフ：現場での使用頻度順（売上入力が最優先、次にカルテ）
 const STAFF_ITEMS = [SALES, KARTE, ANALYTICS, DASHBOARD, SETTINGS];

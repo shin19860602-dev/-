@@ -38,6 +38,7 @@ model Store {
   visits       Visit[]
   menuItems    MenuItem[]
   vintageSales VintageSale[]
+  vintageTags  VintageTag[]
 }
 
 // スタッフ（オーナー／マネージャー／スタッフ）
@@ -179,5 +180,19 @@ model VintageSale {
   paymentMethod String? // "cash"（現金） | "credit"（クレジット）
   memo          String?
 
+  createdAt DateTime @default(now())
+}
+
+// 古着部門の分類・ブランドの一覧（設定画面から編集できる）
+model VintageTag {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  kind String // "category"（分類） | "brand"（ブランド）
+  name String
+
+  sortOrder Int      @default(0) // 表示順（種別ごとに小さい順）
+  active    Boolean  @default(true)
   createdAt DateTime @default(now())
 }
