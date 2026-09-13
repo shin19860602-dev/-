@@ -12,13 +12,13 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// 店舗（美容室2店舗＋まつ毛エクステ1店舗）
+// 店舗（美容室2店舗＋まつ毛エクステ1店舗＋古着店1店舗）
 model Store {
   id        String   @id @default(cuid())
   slug      String   @unique // ログインURLに使う店舗識別子
   name      String
-  kind      String // "SALON" | "LASH"
-  colorKey  String // デザイン上の店舗カラー識別子: "a" | "b" | "c"
+  kind      String // "SALON" | "LASH" | "VINTAGE"（美容部門は SALON/LASH、古着部門は VINTAGE）
+  colorKey  String // デザイン上の店舗カラー識別子: "a" | "b" | "c" | "d"
   createdAt DateTime @default(now())
 
   // 店舗共通のPINログイン試行のロック（誰のPINか分かる前の失敗回数はここで管理）
@@ -33,10 +33,11 @@ model Store {
   // 雇用保険料率（労働者負担分、%）。毎年度改定されるためオーナーが更新する。
   insuranceRate Float @default(0)
 
-  staff      Staff[]
-  customers  Customer[]
-  visits     Visit[]
-  menuItems  MenuItem[]
+  staff        Staff[]
+  customers    Customer[]
+  visits       Visit[]
+  menuItems    MenuItem[]
+  vintageSales VintageSale[]
 }
 
 // スタッフ（オーナー／マネージャー／スタッフ）
@@ -64,6 +65,7 @@ model Staff {
   visits            Visit[]
   primaryCustomers  Customer[] @relation("PrimaryStaff")
   salaries          Salary[]
+  vintageSales      VintageSale[]
 }
 
 // お客様（カルテ台帳）
@@ -155,6 +157,27 @@ model Visit {
   paymentMethod String? // "cash"（現金） | "credit"（クレジット）
   memo       String? // 接客メモ
   chemicalDetail String? // 薬剤・技術詳細（カラー剤、ロッド、放置時間など）
+
+  createdAt DateTime @default(now())
+}
+
+// 古着部門（古着倉庫KUJEKUJE）の売上記録。カルテ（来店履歴）は不要なため、
+// 美容部門のVisit（客・施術中心）とは分けて、シンプルな売上明細として持つ。
+model VintageSale {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  staffId String
+  staff   Staff  @relation(fields: [staffId], references: [id])
+
+  date          DateTime
+  itemName      String // 商品名（例: デニムジャケット）
+  category      String? // 分類（例: トップス、ボトムス）。任意項目。
+  brand         String? // ブランド（例: ノースフェイス）。任意項目。
+  amount        Int // 金額（円）
+  paymentMethod String? // "cash"（現金） | "credit"（クレジット）
+  memo          String?
 
   createdAt DateTime @default(now())
 }

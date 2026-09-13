@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireSession } from "@/lib/session";
+import { requireSession, homePathForSession } from "@/lib/session";
 import PinPad from "./PinPad";
 
 export default async function StorePinPage({
@@ -9,7 +9,7 @@ export default async function StorePinPage({
   params: Promise<{ storeSlug: string }>;
 }) {
   const session = await requireSession();
-  if (session) redirect("/sales");
+  if (session) redirect(await homePathForSession(session));
 
   const { storeSlug } = await params;
   const store = await prisma.store.findUnique({ where: { slug: storeSlug } });
@@ -31,7 +31,7 @@ export default async function StorePinPage({
         <div className="form-label" style={{ textAlign: "center", marginBottom: 6 }}>
           4桁のPINコードを入力してください
         </div>
-        <PinPad storeId={store.id} />
+        <PinPad storeId={store.id} redirectTo={store.kind === "VINTAGE" ? "/vintage" : "/sales"} />
       </div>
     </div>
   );

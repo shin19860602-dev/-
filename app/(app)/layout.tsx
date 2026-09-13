@@ -11,9 +11,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!session) redirect("/");
 
   const isOwner = session.role === "OWNER";
-  const stores = isOwner
-    ? await prisma.store.findMany({ orderBy: { createdAt: "asc" }, select: { slug: true, name: true, colorKey: true } })
-    : [];
+  // 「全店舗」は美容部門（SALON/LASH）のみを指す。古着部門（VINTAGE）は完全に別画面で扱う。
+  const allStoresForLayout = await prisma.store.findMany({
+    orderBy: { createdAt: "asc" },
+    select: { id: true, slug: true, name: true, colorKey: true, kind: true },
+  });
+  const stores = isOwner ? allStoresForLayout.filter((s) => s.kind !== "VINTAGE") : [];
+  const isVintageStaff = !isOwner && allStoresForLayout.find((s) => s.id === session.storeId)?.kind === "VINTAGE";
 
   return (
     <div className="app">
@@ -31,7 +35,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         )}
 
-        <NavLinks isOwner={isOwner} />
+        <NavLinks isOwner={isOwner} showVintage={isOwner || isVintageStaff} />
 
         <div className="sidebar-spacer" />
         <div className="owner-card">

@@ -52,6 +52,14 @@ export function PayrollIcon() {
     </svg>
   );
 }
+export function VintageIcon() {
+  return (
+    <svg className="nav-icon" viewBox="0 0 24 24" fill="none">
+      <path d="M9 4h6l1 2 4 2-2 4-3-1v9a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-9l-3 1-2-4 4-2 1-2Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M9 4a3 3 0 0 0 6 0" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
 export function AnalyticsIcon() {
   return (
     <svg className="nav-icon" viewBox="0 0 24 24" fill="none">

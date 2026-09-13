@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireSession } from "@/lib/session";
+import { requireSession, homePathForSession } from "@/lib/session";
 
 export default async function LoginEntryPage() {
   const session = await requireSession();
-  if (session) redirect("/sales");
+  if (session) redirect(await homePathForSession(session));
 
   const stores = await prisma.store.findMany({ orderBy: { createdAt: "asc" } });
   const colorVar = (k: string) => `var(--store-${k})`;

@@ -82,7 +82,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     findVisits({ storeId, date: { gte: lastYearToDate.start, lt: lastYearToDate.end } }),
     repeatRate(storeId, thisMonth.start, thisMonth.end),
     repeatRate(storeId, lastMonth.start, lastMonth.end),
-    prisma.store.findMany({ orderBy: { createdAt: "asc" } }),
+    prisma.store.findMany({ where: { kind: { not: "VINTAGE" } }, orderBy: { createdAt: "asc" } }),
     prisma.visit.findMany({
       where: { storeId, date: { gte: sixMonthsAgo.start, lt: thisMonth.end } },
       select: { storeId: true, amount: true, productAmount: true, pointAmount: true, date: true },

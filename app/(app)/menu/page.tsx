@@ -18,7 +18,7 @@ export default async function MenuPage({ searchParams }: { searchParams: Promise
   const scopeLabel = store ? store.name : "全店舗";
 
   const stores = await prisma.store.findMany({
-    where: storeId ? { id: storeId } : undefined,
+    where: { kind: { not: "VINTAGE" }, ...(storeId ? { id: storeId } : {}) },
     orderBy: { createdAt: "asc" },
     include: { menuItems: { orderBy: { sortOrder: "asc" } } },
   });

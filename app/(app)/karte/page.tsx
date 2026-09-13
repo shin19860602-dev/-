@@ -47,7 +47,7 @@ export default async function KartePage({
     : null;
 
   const [allStores, allStaff] = await Promise.all([
-    prisma.store.findMany({ orderBy: { createdAt: "asc" } }),
+    prisma.store.findMany({ where: { kind: { not: "VINTAGE" } }, orderBy: { createdAt: "asc" } }),
     prisma.staff.findMany({ where: { storeId: storeId ?? undefined, active: true, role: { not: "OWNER" } }, orderBy: { name: "asc" } }),
   ]);
 

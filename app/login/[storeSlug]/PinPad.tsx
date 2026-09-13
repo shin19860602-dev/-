@@ -6,7 +6,7 @@ import { submitPin } from "@/app/login/actions";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
 
-export default function PinPad({ storeId }: { storeId: string }) {
+export default function PinPad({ storeId, redirectTo }: { storeId: string; redirectTo: string }) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -24,7 +24,7 @@ export default function PinPad({ storeId }: { storeId: string }) {
     startTransition(async () => {
       const result = await submitPin(storeId, pin);
       if (result.ok) {
-        router.push("/sales");
+        router.push(redirectTo);
         router.refresh();
       } else {
         setPin("");

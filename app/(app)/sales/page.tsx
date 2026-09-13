@@ -54,8 +54,11 @@ export default async function SalesPage({
 
   const [visits, allStores, allStaff, allCustomers, todayVisits, lastYearTodayVisits, allMenuItems] = await Promise.all([
     findVisits({ storeId, staffId: sp.staff || undefined, date: { gte: start, lt: end } }),
-    prisma.store.findMany({ orderBy: { createdAt: "asc" } }),
-    prisma.staff.findMany({ where: { storeId: storeId ?? undefined, active: true, role: { not: "OWNER" } }, orderBy: { name: "asc" } }),
+    prisma.store.findMany({ where: { kind: { not: "VINTAGE" } }, orderBy: { createdAt: "asc" } }),
+    prisma.staff.findMany({
+      where: { storeId: storeId ?? undefined, active: true, role: { not: "OWNER" }, store: { kind: { not: "VINTAGE" } } },
+      orderBy: { name: "asc" },
+    }),
     prisma.customer.findMany({ where: { storeId: storeId ?? undefined, active: true }, orderBy: { name: "asc" } }),
     findVisits({ storeId, date: { gte: today.start, lt: today.end } }),
     findVisits({ storeId, date: { gte: lastYearToday.start, lt: lastYearToday.end } }),

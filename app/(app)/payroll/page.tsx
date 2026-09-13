@@ -56,7 +56,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   const selectedMonthValue = sp.month && monthOptions.some((o) => o.value === sp.month) ? sp.month : defaultMonthValue;
 
   const staffList = await prisma.staff.findMany({
-    where: { storeId: storeId ?? undefined, role: { not: "OWNER" } },
+    where: { storeId: storeId ?? undefined, role: { not: "OWNER" }, store: { kind: { not: "VINTAGE" } } },
     include: { store: true },
     orderBy: [{ active: "desc" }, { role: "asc" }, { hireDate: "asc" }],
   });
@@ -93,7 +93,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
 
   const settingsStores = canEdit
     ? await prisma.store.findMany({
-        where: storeId ? { id: storeId } : undefined,
+        where: { kind: { not: "VINTAGE" }, ...(storeId ? { id: storeId } : {}) },
         orderBy: { createdAt: "asc" },
         select: { id: true, name: true, payrollPassword: true, insuranceRate: true },
       })

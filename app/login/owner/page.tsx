@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import { requireSession } from "@/lib/session";
+import { requireSession, homePathForSession } from "@/lib/session";
 import OwnerForm from "./OwnerForm";
 
 export default async function OwnerLoginPage() {
   const session = await requireSession();
-  if (session) redirect("/sales");
+  if (session) redirect(await homePathForSession(session));
 
   return (
     <div className="auth-shell">

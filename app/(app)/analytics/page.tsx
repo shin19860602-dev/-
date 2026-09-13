@@ -39,7 +39,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
       where: { storeId: storeId ?? undefined, date: { gte: thisMonth.start, lt: thisMonth.end } },
       select: { menuName: true, category: true, amount: true, productAmount: true, pointAmount: true, storeId: true },
     }),
-    prisma.store.findMany({ orderBy: { createdAt: "asc" } }),
+    prisma.store.findMany({ where: { kind: { not: "VINTAGE" } }, orderBy: { createdAt: "asc" } }),
     prisma.visit.findMany({
       where: { storeId: storeId ?? undefined, date: { gte: lastMonth.start, lt: lastMonth.end } },
       select: { amount: true, productAmount: true, pointAmount: true, storeId: true },

@@ -24,7 +24,7 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
 
   const [staffList, allStores] = await Promise.all([
     prisma.staff.findMany({
-      where: { storeId: storeId ?? undefined, role: { not: "OWNER" } },
+      where: { storeId: storeId ?? undefined, role: { not: "OWNER" }, store: { kind: { not: "VINTAGE" } } },
       include: {
         store: true,
         visits: { where: { date: { gte: thisMonth.start, lt: thisMonth.end } } },
@@ -32,7 +32,7 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
       },
       orderBy: [{ active: "desc" }, { role: "asc" }, { hireDate: "asc" }],
     }),
-    prisma.store.findMany({ orderBy: { createdAt: "asc" } }),
+    prisma.store.findMany({ where: { kind: { not: "VINTAGE" } }, orderBy: { createdAt: "asc" } }),
   ]);
 
   const yearsOfService = (hireDate: Date | null) => {

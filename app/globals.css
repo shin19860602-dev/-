@@ -23,6 +23,8 @@
   --store-b-soft: #dcebe5;
   --store-c: #7c63b8;
   --store-c-soft: #e6e0f6;
+  --store-d: #a8763f;
+  --store-d-soft: #f3e6d3;
   --good: #3f8f5c;
   --good-soft: #def0e4;
   --warn: #b8791f;
@@ -58,6 +60,8 @@
     --store-b-soft: #24413a;
     --store-c: #b0a0e8;
     --store-c-soft: #362e52;
+    --store-d: #d9a866;
+    --store-d-soft: #4a3c22;
     --good: #6fbf8b;
     --good-soft: #244034;
     --warn: #e3bc6f;
@@ -90,6 +94,8 @@
   --store-b-soft: #24413a;
   --store-c: #b0a0e8;
   --store-c-soft: #362e52;
+  --store-d: #d9a866;
+  --store-d-soft: #4a3c22;
   --good: #6fbf8b;
   --good-soft: #244034;
   --warn: #e3bc6f;
@@ -193,6 +199,7 @@ main { flex: 1; min-width: 0; }
 .badge-store-a { background: var(--store-a-soft); color: var(--store-a); }
 .badge-store-b { background: var(--store-b-soft); color: var(--store-b); }
 .badge-store-c { background: var(--store-c-soft); color: var(--store-c); }
+.badge-store-d { background: var(--store-d-soft); color: var(--store-d); }
 
 .view { padding: 26px 32px 56px; }
 

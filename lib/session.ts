@@ -49,3 +49,12 @@ export async function requireSession() {
 
   return session;
 }
+
+// ログイン後の遷移先。古着部門（VINTAGE）のスタッフだけは /vintage、それ以外は /sales。
+export async function homePathForSession(session: SessionData): Promise<string> {
+  if (session.role !== "OWNER" && session.storeId) {
+    const store = await prisma.store.findUnique({ where: { id: session.storeId }, select: { kind: true } });
+    if (store?.kind === "VINTAGE") return "/vintage";
+  }
+  return "/sales";
+}
