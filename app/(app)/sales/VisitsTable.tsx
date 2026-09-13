@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { updateVisit, deleteVisit } from "./actions";
 import { yen, visitTotal } from "@/lib/analytics";
 import { sanitizeAmountInput } from "@/lib/format";
+import { categoriesForStoreKind } from "@/lib/categories";
 
 const BADGE_CLASS: Record<string, string> = { a: "badge-store-a", b: "badge-store-b", c: "badge-store-c" };
 const PAYMENT_LABEL: Record<string, string> = { cash: "現金", credit: "クレジット" };
@@ -16,12 +17,13 @@ type Visit = {
   date: Date;
   menuName: string;
   amount: number;
+  category: string | null;
   productName: string | null;
   productAmount: number | null;
   pointAmount: number | null;
   paymentMethod: string | null;
   memo: string | null;
-  store: { name: string; colorKey: string };
+  store: { name: string; colorKey: string; kind: string };
   staff: { name: string };
   customer: { name: string };
 };
@@ -59,6 +61,7 @@ export default function VisitsTable({ visits, canEdit }: { visits: Visit[]; canE
                 <td data-label="お客様">{v.customer.name} 様</td>
                 <td data-label="施術内容">
                   {v.menuName}
+                  {v.category && <span className="card-sub" style={{ margin: 0 }}>分類：{v.category}</span>}
                   {v.productName && <span className="card-sub" style={{ margin: 0 }}>＋店販：{v.productName}</span>}
                   {v.pointAmount ? <span className="card-sub" style={{ margin: 0 }}>＋ポイント{yen(v.pointAmount)}</span> : null}
                 </td>
@@ -116,7 +119,9 @@ function EditRow({ visit, colSpan, onDone }: { visit: Visit; colSpan: number; on
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "credit">((visit.paymentMethod as "cash" | "credit") ?? "cash");
+  const [category, setCategory] = useState<string | null>(visit.category);
   const [pending, startTransition] = useTransition();
+  const categoryOptions = categoriesForStoreKind(visit.store.kind);
 
   return (
     <tr>
@@ -157,6 +162,23 @@ function EditRow({ visit, colSpan, onDone }: { visit: Visit; colSpan: number; on
               required
               onChange={sanitizeAmountInput}
             />
+          </div>
+          <div style={{ gridColumn: "1 / -1" }}>
+            <label className="form-label">分類（任意・集計に使用）</label>
+            <input type="hidden" name="category" value={category ?? ""} />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {categoryOptions.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={category === c ? "btn-primary" : "btn-ghost"}
+                  style={{ padding: "6px 12px", fontSize: 12 }}
+                  onClick={() => setCategory((cur) => (cur === c ? null : c))}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
           </div>
           <div>
             <label className="form-label">ポイント売上（任意）</label>

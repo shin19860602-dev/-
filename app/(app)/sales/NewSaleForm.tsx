@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createVisit } from "./actions";
 import CustomerCombobox from "./CustomerCombobox";
 import { sanitizeAmountInput } from "@/lib/format";
+import { categoriesForStoreKind } from "@/lib/categories";
 
 type Store = { id: string; name: string; colorKey: string; kind: string };
 type Customer = { id: string; name: string; storeId: string };
@@ -12,20 +13,6 @@ type MenuItem = { id: string; name: string; price: number; storeId: string };
 
 // IME変換前（ひらがな入力中）の文字列だけを拾う。漢字から読みを推測するより、実際にタイプされたかなの方が正確。
 const HIRAGANA_RE = /^[ぁ-ゖー]+$/;
-
-// 集計・分析のカテゴリ別売上構成比に使う分類。店舗の業態ごとに選択肢が異なる（店販は別項目で金額を集計するためここには含めない）。
-const SALON_CATEGORIES = ["カット", "カラー", "パーマ", "縮毛矯正", "トリートメント", "その他"];
-const LASH_CATEGORIES = [
-  "つけ放題",
-  "リペア",
-  "LEDつけ放題",
-  "LEDリペア",
-  "下まつ毛エクステ",
-  "まつ毛パーマ",
-  "下まつ毛パーマ",
-  "ヘアカラー",
-  "トリートメント",
-];
 
 export default function NewSaleForm({
   isOwner,
@@ -70,7 +57,7 @@ export default function NewSaleForm({
   const defaultDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   const selectedStore = useMemo(() => stores.find((s) => s.id === storeId), [stores, storeId]);
-  const categoryOptions = selectedStore?.kind === "LASH" ? LASH_CATEGORIES : SALON_CATEGORIES;
+  const categoryOptions = categoriesForStoreKind(selectedStore?.kind ?? "");
   const customerOptions = useMemo(() => customers.filter((c) => c.storeId === storeId), [customers, storeId]);
   const couponOptions = useMemo(() => couponMenus.filter((m) => m.storeId === storeId), [couponMenus, storeId]);
   const menuOptions = useMemo(() => menuMenus.filter((m) => m.storeId === storeId), [menuMenus, storeId]);
