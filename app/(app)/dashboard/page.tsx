@@ -111,6 +111,20 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const visitsDelta = pctDelta(thisMonthVisits.length, lastMonthVisits.length);
   const repeatDeltaPt = repeatThis - repeatLast;
 
+  // カテゴリ別売上構成比（売上登録時に選んだ分類ごと。店販は別項目として合算する）
+  const categoryTotals = new Map<string, number>();
+  let categoryProductTotal = 0;
+  for (const v of thisMonthVisits) {
+    const key = v.category || "未分類";
+    categoryTotals.set(key, (categoryTotals.get(key) ?? 0) + v.amount);
+    categoryProductTotal += v.productAmount ?? 0;
+  }
+  if (categoryProductTotal > 0) categoryTotals.set("店販", categoryProductTotal);
+  const categoryTotalSum = [...categoryTotals.values()].reduce((a, v) => a + v, 0) || 1;
+  const categoryBars = [...categoryTotals.entries()]
+    .map(([key, value]) => ({ key, label: key, color: "var(--accent)", value }))
+    .sort((a, b) => b.value - a.value);
+
   // 店舗別 今月売上（全店舗表示のときのみ）
   const storeBars = !storeId
     ? allStores.map((s) => ({
@@ -227,14 +241,24 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             />
           </div>
 
-          {!storeId && (
-            <div className="card card-pad">
-              <div className="card-title">今月の店舗別売上</div>
-              <div className="card-sub">構成比</div>
-              <BarList bars={storeBars} valueFormatter={yen} />
-            </div>
-          )}
+          <div className="card card-pad">
+            <div className="card-title">カテゴリ別売上構成比（今月・{scopeLabel}）</div>
+            <div className="card-sub">売上登録時に選んだ分類の内訳</div>
+            <BarList
+              bars={categoryBars.map((b) => ({ ...b, label: `${b.label} ${Math.round((b.value / categoryTotalSum) * 100)}%` }))}
+              valueFormatter={yen}
+            />
+            {categoryBars.length === 0 && <div className="card-sub">今月の記録はまだありません。</div>}
+          </div>
         </div>
+
+        {!storeId && (
+          <div className="card card-pad" style={{ marginBottom: 16 }}>
+            <div className="card-title">今月の店舗別売上</div>
+            <div className="card-sub">構成比</div>
+            <BarList bars={storeBars} valueFormatter={yen} />
+          </div>
+        )}
 
         <div className="card card-pad" style={{ marginBottom: 16 }}>
           <div className="card-title">日次売上推移（前年比較）</div>
