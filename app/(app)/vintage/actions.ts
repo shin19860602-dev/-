@@ -8,7 +8,6 @@ import { requireSession } from "@/lib/session";
 const schema = z.object({
   storeId: z.string().min(1),
   date: z.string().min(1),
-  itemName: z.string().trim().min(1),
   category: z.string().trim().optional(),
   brand: z.string().trim().optional(),
   amount: z.string().min(1),
@@ -41,7 +40,6 @@ export async function createVintageSale(formData: FormData) {
       storeId,
       staffId,
       date,
-      itemName: data.itemName,
       category: data.category || undefined,
       brand: data.brand || undefined,
       amount,
@@ -57,7 +55,6 @@ export async function createVintageSale(formData: FormData) {
 const updateSchema = z.object({
   saleId: z.string().min(1),
   date: z.string().min(1),
-  itemName: z.string().trim().min(1),
   category: z.string().trim().optional(),
   brand: z.string().trim().optional(),
   amount: z.string().min(1),
@@ -95,7 +92,6 @@ export async function updateVintageSale(formData: FormData) {
     where: { id: data.saleId },
     data: {
       date,
-      itemName: data.itemName,
       category: data.category || null,
       brand: data.brand || null,
       amount,

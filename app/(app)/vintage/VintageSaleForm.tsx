@@ -65,11 +65,6 @@ export default function VintageSaleForm({
           </div>
 
           <div style={{ gridColumn: "span 2" }}>
-            <label className="form-label">商品名</label>
-            <input className="field-input" name="itemName" placeholder="例：デニムジャケット" required />
-          </div>
-
-          <div style={{ gridColumn: "span 2" }}>
             <label className="form-label">分類（任意）</label>
             <input type="hidden" name="category" value={category ?? ""} />
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>

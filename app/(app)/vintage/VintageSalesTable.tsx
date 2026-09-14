@@ -13,7 +13,6 @@ const toDateInput = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).
 type Sale = {
   id: string;
   date: Date;
-  itemName: string;
   category: string | null;
   brand: string | null;
   amount: number;
@@ -43,9 +42,9 @@ export default function VintageSalesTable({
           <tr>
             <th>日付</th>
             <th>担当スタッフ</th>
-            <th>商品名</th>
             <th>分類</th>
             <th>ブランド</th>
+            <th>メモ</th>
             <th>お支払い</th>
             <th style={{ textAlign: "right" }}>金額</th>
             {canEdit && <th></th>}
@@ -66,12 +65,9 @@ export default function VintageSalesTable({
               <tr key={s.id}>
                 <td data-label="日付">{dateLabel(s.date)}</td>
                 <td data-label="担当">{s.staff.name}</td>
-                <td data-label="商品名">
-                  {s.itemName}
-                  {s.memo && <span className="card-sub" style={{ margin: 0 }}>{s.memo}</span>}
-                </td>
                 <td data-label="分類">{s.category ?? "-"}</td>
                 <td data-label="ブランド">{s.brand ?? "-"}</td>
+                <td data-label="メモ">{s.memo ?? "-"}</td>
                 <td data-label="お支払い">{s.paymentMethod ? PAYMENT_LABEL[s.paymentMethod] ?? s.paymentMethod : "-"}</td>
                 <td data-label="金額" style={{ textAlign: "right" }}>
                   {yen(s.amount)}
@@ -164,10 +160,6 @@ function EditRow({
           <div>
             <label className="form-label">日付</label>
             <input className="field-input" name="date" type="date" defaultValue={toDateInput(sale.date)} required />
-          </div>
-          <div>
-            <label className="form-label">商品名</label>
-            <input className="field-input" name="itemName" defaultValue={sale.itemName} required />
           </div>
           <div>
             <label className="form-label">金額（円）</label>

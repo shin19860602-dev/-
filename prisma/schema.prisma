@@ -173,7 +173,6 @@ model VintageSale {
   staff   Staff  @relation(fields: [staffId], references: [id])
 
   date          DateTime
-  itemName      String // 商品名（例: デニムジャケット）
   category      String? // 分類（例: トップス、ボトムス）。任意項目。
   brand         String? // ブランド（例: ノースフェイス）。任意項目。
   amount        Int // 金額（円）
