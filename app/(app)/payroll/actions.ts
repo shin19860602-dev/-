@@ -86,6 +86,35 @@ export async function saveSalary(formData: FormData) {
   return { ok: true as const };
 }
 
+const storeSavingsSchema = z.object({
+  storeId: z.string().min(1),
+  yearMonth: z.string().regex(/^\d{4}-\d{2}$/),
+  amount: z.string().optional(),
+  memo: z.string().trim().optional(),
+});
+
+// 店舗貯金（特定スタッフの給料ではなく店舗として積み立てる資金）を登録・編集する
+export async function saveStoreSavings(formData: FormData) {
+  const session = await requireSession();
+  if (!session || session.role !== "OWNER") return { ok: false as const, error: "権限がありません。" };
+
+  const parsed = storeSavingsSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false as const, error: "入力内容をご確認ください。" };
+  const data = parsed.data;
+
+  const amount = toAmount(data.amount);
+  if (amount === null) return { ok: false as const, error: "金額をご確認ください。" };
+
+  await prisma.storeSavings.upsert({
+    where: { storeId_yearMonth: { storeId: data.storeId, yearMonth: data.yearMonth } },
+    update: { amount, memo: data.memo || null },
+    create: { storeId: data.storeId, yearMonth: data.yearMonth, amount, memo: data.memo || undefined },
+  });
+
+  revalidatePath("/payroll");
+  return { ok: true as const };
+}
+
 const insuranceRateSchema = z.object({
   storeId: z.string().min(1),
   insuranceRate: z.string().min(1),

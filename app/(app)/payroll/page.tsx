@@ -8,6 +8,7 @@ import Topbar from "../Topbar";
 import SettingsTabs from "../SettingsTabs";
 import MonthSelect from "../MonthSelect";
 import SalaryRow from "./SalaryRow";
+import StoreSavingsRow from "./StoreSavingsRow";
 import PayrollPasswordGate from "./PayrollPasswordGate";
 import PayrollPasswordForm from "./PayrollPasswordForm";
 import InsuranceRateForm from "./InsuranceRateForm";
@@ -99,6 +100,15 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
       })
     : [];
 
+  const storesForSavings = await prisma.store.findMany({
+    where: { kind: { not: "VINTAGE" }, ...(storeId ? { id: storeId } : {}) },
+    orderBy: { createdAt: "asc" },
+  });
+  const storeSavingsList = await prisma.storeSavings.findMany({
+    where: { storeId: { in: storesForSavings.map((s) => s.id) }, yearMonth: selectedMonthValue },
+  });
+  const savingsByStore = new Map(storeSavingsList.map((s) => [s.storeId, s]));
+
   return (
     <>
       <Topbar title="設定・給料" scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
@@ -163,6 +173,27 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
               この店舗にはまだスタッフが登録されていません。
             </div>
           )}
+        </div>
+
+        <div className="card card-pad" style={{ marginTop: 16 }}>
+          <div className="card-title">店舗貯金</div>
+          <div className="card-sub">特定のスタッフの給料ではなく、店舗として積み立てる資金です。給料の合計には含まれません。</div>
+          <div>
+            {storesForSavings.map((s) => {
+              const saving = savingsByStore.get(s.id);
+              return (
+                <StoreSavingsRow
+                  key={s.id}
+                  storeId={s.id}
+                  storeName={s.name}
+                  yearMonth={selectedMonthValue}
+                  amount={saving?.amount ?? 0}
+                  memo={saving?.memo ?? ""}
+                  canEdit={canEdit}
+                />
+              );
+            })}
+          </div>
         </div>
 
         <div className="card-sub" style={{ marginTop: 10 }}>

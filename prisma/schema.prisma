@@ -39,6 +39,7 @@ model Store {
   menuItems    MenuItem[]
   vintageSales VintageSale[]
   vintageTags  VintageTag[]
+  storeSavings StoreSavings[]
 }
 
 // スタッフ（オーナー／マネージャー／スタッフ）
@@ -134,6 +135,22 @@ model Salary {
   updatedAt DateTime @updatedAt
 
   @@unique([staffId, yearMonth])
+}
+
+// 店舗貯金（特定スタッフの給料ではなく、店舗として積み立てる資金。給料合計には含めない）
+model StoreSavings {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  yearMonth String // "2026-09" 形式（対象月）
+  amount    Int    @default(0)
+  memo      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, yearMonth])
 }
 
 // 来店・施術記録（＝カルテ明細であり、同時に売上明細でもある）
