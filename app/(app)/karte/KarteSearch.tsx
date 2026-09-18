@@ -2,6 +2,10 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+// IME変換前（ひらがな入力中）の文字列だけを拾う。Safari等はcompositionupdateまで
+// input/changeイベントを発火しないため、確定・変換を待たず1文字目から検索できるようにする。
+const HIRAGANA_RE = /^[ぁ-ゖー]+$/;
+
 export default function KarteSearch() {
   const router = useRouter();
   const pathname = usePathname();
@@ -25,6 +29,11 @@ export default function KarteSearch() {
         placeholder="お客様名・ふりがなで検索（1文字目から絞り込み）"
         defaultValue={searchParams.get("q") ?? ""}
         onChange={(e) => onChange(e.target.value)}
+        onCompositionUpdate={(e) => {
+          const data = e.data ?? "";
+          if (HIRAGANA_RE.test(data)) onChange(data);
+        }}
+        onCompositionEnd={(e) => onChange(e.currentTarget.value)}
       />
     </div>
   );
