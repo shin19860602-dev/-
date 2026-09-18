@@ -47,7 +47,7 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
     <>
       <Topbar title="設定・スタッフ" scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
       <div className="view">
-        <SettingsTabs />
+        <SettingsTabs isOwner={session.role === "OWNER"} />
         {canAddStaff && (
           <NewStaffForm
             isOwner={session.role === "OWNER"}

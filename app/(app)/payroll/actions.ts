@@ -165,7 +165,8 @@ const unlockSchema = z.object({
   password: z.string().min(1),
 });
 
-// スタッフ・マネージャーが自店舗の給料閲覧ロックを解除する
+// スタッフ・マネージャーが自店舗の給料閲覧ロックを解除する。
+// 同じ入力欄に「貯金閲覧用パスワード」を入れた場合は、貯金の解除＆ /payroll/savings への遷移を返す。
 export async function unlockPayroll(formData: FormData) {
   const session = await requireSession();
   if (!session) return { ok: false as const, error: "ログインが必要です。" };
@@ -178,14 +179,18 @@ export async function unlockPayroll(formData: FormData) {
 
   const store = await prisma.store.findUnique({ where: { id: storeId } });
   if (!store) return { ok: false as const, error: "店舗が見つかりません。" };
-  if (!store.payrollPassword) return { ok: false as const, error: "閲覧用パスワードが設定されていません。オーナーに設定を依頼してください。" };
+  if (!store.payrollPassword && !store.savingsPassword) {
+    return { ok: false as const, error: "閲覧用パスワードが設定されていません。オーナーに設定を依頼してください。" };
+  }
 
   if (store.payrollLockedUntil && store.payrollLockedUntil > new Date()) {
     return { ok: false as const, error: "試行回数が上限に達しました。しばらくしてから再度お試しください。" };
   }
 
-  const valid = await bcrypt.compare(parsed.data.password, store.payrollPassword);
-  if (!valid) {
+  const matchesPayroll = store.payrollPassword ? await bcrypt.compare(parsed.data.password, store.payrollPassword) : false;
+  const matchesSavings = !matchesPayroll && store.savingsPassword ? await bcrypt.compare(parsed.data.password, store.savingsPassword) : false;
+
+  if (!matchesPayroll && !matchesSavings) {
     const attempts = store.payrollFailedAttempts + 1;
     const lockedUntil = attempts >= MAX_UNLOCK_ATTEMPTS ? new Date(Date.now() + UNLOCK_LOCK_MINUTES * 60_000) : null;
     await prisma.store.update({ where: { id: storeId }, data: { payrollFailedAttempts: attempts, payrollLockedUntil: lockedUntil } });
@@ -194,11 +199,18 @@ export async function unlockPayroll(formData: FormData) {
 
   await prisma.store.update({ where: { id: storeId }, data: { payrollFailedAttempts: 0, payrollLockedUntil: null } });
 
+  if (matchesSavings) {
+    session.savingsUnlockedStoreId = storeId;
+    await session.save();
+    revalidatePath("/payroll/savings");
+    return { ok: true as const, redirectTo: "/payroll/savings" };
+  }
+
   session.payrollUnlockedStoreId = storeId;
   await session.save();
 
   revalidatePath("/payroll");
-  return { ok: true as const };
+  return { ok: true as const, redirectTo: undefined };
 }
 
 // オーナーが店舗ごとの店舗貯金閲覧用パスワードを設定・変更する（給料用とは別のパスワード）

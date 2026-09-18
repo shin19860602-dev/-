@@ -27,7 +27,7 @@ export default async function MenuPage({ searchParams }: { searchParams: Promise
     <>
       <Topbar title="設定・メニュー" scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
       <div className="view">
-        <SettingsTabs />
+        <SettingsTabs isOwner={session.role === "OWNER"} />
 
         {stores.map((s) => {
           const canEdit = session.role === "OWNER" || (session.role === "MANAGER" && session.storeId === s.id);

@@ -21,7 +21,8 @@ export default function PayrollPasswordGate({ storeId }: { storeId: string }) {
           startTransition(async () => {
             const result = await unlockPayroll(formData);
             if (result.ok) {
-              router.refresh();
+              if (result.redirectTo) router.push(result.redirectTo);
+              else router.refresh();
             } else {
               setError(result.error);
             }

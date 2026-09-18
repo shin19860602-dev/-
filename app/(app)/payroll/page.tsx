@@ -31,7 +31,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
       <>
         <Topbar title="設定・給料" scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
         <div className="view">
-          <SettingsTabs />
+          <SettingsTabs isOwner={session.role === "OWNER"} />
           <PayrollPasswordGate storeId={storeId!} />
         </div>
       </>
@@ -103,7 +103,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
     <>
       <Topbar title="設定・給料" scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
       <div className="view">
-        <SettingsTabs />
+        <SettingsTabs isOwner={session.role === "OWNER"} />
 
         {canEdit && (
           <div className="grid-2" style={{ marginBottom: 16 }}>

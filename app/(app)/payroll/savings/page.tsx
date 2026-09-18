@@ -28,7 +28,7 @@ export default async function StoreSavingsPage({ searchParams }: { searchParams:
       <>
         <Topbar title="設定・貯金" scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
         <div className="view">
-          <SettingsTabs />
+          <SettingsTabs isOwner={session.role === "OWNER"} />
           <SavingsPasswordGate storeId={storeId!} />
         </div>
       </>
@@ -68,7 +68,7 @@ export default async function StoreSavingsPage({ searchParams }: { searchParams:
     <>
       <Topbar title="設定・貯金" scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
       <div className="view">
-        <SettingsTabs />
+        <SettingsTabs isOwner={session.role === "OWNER"} />
 
         {canEdit && (
           <div className="card card-pad" style={{ marginBottom: 16 }}>
