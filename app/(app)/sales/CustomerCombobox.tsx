@@ -2,7 +2,11 @@
 
 import { useMemo, useRef, useState } from "react";
 
-type Customer = { id: string; name: string };
+// IME変換前（ひらがな入力中）の文字列だけを拾う。Safari等はcompositionupdateまで
+// input/changeイベントを発火しないため、確定・変換を待たず1文字目から絞り込めるようにする。
+const HIRAGANA_RE = /^[ぁ-ゖー]+$/;
+
+type Customer = { id: string; name: string; kana: string | null };
 
 export default function CustomerCombobox({
   customers,
@@ -21,7 +25,7 @@ export default function CustomerCombobox({
   const matches = useMemo(() => {
     const q = query.trim();
     if (!q) return customers.slice(0, 30);
-    return customers.filter((c) => c.name.includes(q)).slice(0, 30);
+    return customers.filter((c) => c.name.startsWith(q) || (c.kana ?? "").startsWith(q)).slice(0, 30);
   }, [customers, query]);
 
   const select = (c: Customer) => {
@@ -41,6 +45,14 @@ export default function CustomerCombobox({
           setQuery(e.target.value);
           setSelectedId("");
           setOpen(true);
+        }}
+        onCompositionUpdate={(e) => {
+          const data = e.data ?? "";
+          if (HIRAGANA_RE.test(data)) {
+            setQuery(data);
+            setSelectedId("");
+            setOpen(true);
+          }
         }}
         onFocus={() => setOpen(true)}
         onBlur={() => {

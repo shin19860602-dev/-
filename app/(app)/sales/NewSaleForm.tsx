@@ -8,7 +8,7 @@ import { sanitizeAmountInput } from "@/lib/format";
 import { categoriesForStoreKind } from "@/lib/categories";
 
 type Store = { id: string; name: string; colorKey: string; kind: string };
-type Customer = { id: string; name: string; storeId: string };
+type Customer = { id: string; name: string; kana: string | null; storeId: string };
 type MenuItem = { id: string; name: string; price: number; storeId: string };
 
 // IME変換前（ひらがな入力中）の文字列だけを拾う。漢字から読みを推測するより、実際にタイプされたかなの方が正確。
