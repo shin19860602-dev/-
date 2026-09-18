@@ -24,7 +24,13 @@ export default function KarteSearch() {
       <input
         placeholder="お客様名・ふりがなで検索"
         defaultValue={searchParams.get("q") ?? ""}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          // IME変換中（ローマ字入力でひらがなに変換される前）に検索してしまうと、
+          // まだ確定していないローマ字のまま検索されてしまうため、確定後だけ検索する
+          if (e.nativeEvent instanceof InputEvent && e.nativeEvent.isComposing) return;
+          onChange(e.target.value);
+        }}
+        onCompositionEnd={(e) => onChange(e.currentTarget.value)}
       />
     </div>
   );
