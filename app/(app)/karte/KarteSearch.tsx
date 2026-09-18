@@ -22,15 +22,9 @@ export default function KarteSearch() {
         <path d="M21 21l-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       </svg>
       <input
-        placeholder="お客様名・ふりがなで検索"
+        placeholder="お客様名・ふりがなで検索（1文字目から絞り込み）"
         defaultValue={searchParams.get("q") ?? ""}
-        onChange={(e) => {
-          // IME変換中（ローマ字入力でひらがなに変換される前）に検索してしまうと、
-          // まだ確定していないローマ字のまま検索されてしまうため、確定後だけ検索する
-          if (e.nativeEvent instanceof InputEvent && e.nativeEvent.isComposing) return;
-          onChange(e.target.value);
-        }}
-        onCompositionEnd={(e) => onChange(e.currentTarget.value)}
+        onChange={(e) => onChange(e.target.value)}
       />
     </div>
   );
