@@ -8,8 +8,14 @@ const SALES = { href: "/sales", label: "売上", Icon: SalesIcon, ownerOnly: fal
 const KARTE = { href: "/karte", label: "カルテ", Icon: KarteIcon, ownerOnly: false, group: ["/karte"] };
 const ANALYTICS = { href: "/analytics", label: "集計・分析", Icon: AnalyticsIcon, ownerOnly: true, group: ["/analytics"] };
 const DASHBOARD = { href: "/dashboard", label: "ダッシュボード", Icon: DashboardIcon, ownerOnly: false, group: ["/dashboard"] };
-const SETTINGS = { href: "/menu", label: "設定", Icon: SettingsIcon, ownerOnly: false, group: ["/staff", "/menu", "/payroll"] };
-const PAYROLL = { href: "/payroll", label: "給料", Icon: PayrollIcon, ownerOnly: true, group: ["/payroll"] };
+const SETTINGS = {
+  href: "/menu",
+  label: "設定",
+  Icon: SettingsIcon,
+  ownerOnly: false,
+  group: ["/staff", "/menu", "/payroll", "/payroll/savings"],
+};
+const PAYROLL = { href: "/payroll", label: "給料", Icon: PayrollIcon, ownerOnly: true, group: ["/payroll", "/payroll/savings"] };
 const VINTAGE = {
   href: "/vintage",
   label: "古着",

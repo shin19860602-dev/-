@@ -30,6 +30,11 @@ model Store {
   payrollFailedAttempts Int       @default(0)
   payrollLockedUntil    DateTime?
 
+  // 店舗貯金閲覧用パスワード（ハッシュ化）。給料用とは別のパスワードで、貯金だけを見せる。
+  savingsPassword       String?
+  savingsFailedAttempts Int       @default(0)
+  savingsLockedUntil    DateTime?
+
   // 雇用保険料率（労働者負担分、%）。毎年度改定されるためオーナーが更新する。
   insuranceRate Float @default(0)
 

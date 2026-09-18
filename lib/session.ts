@@ -12,6 +12,8 @@ export interface SessionData {
   title?: string | null;
   // 給料閲覧用パスワードを入力し、閲覧を許可された店舗ID（オーナーは常に閲覧可のため使わない）
   payrollUnlockedStoreId?: string;
+  // 店舗貯金閲覧用パスワードを入力し、閲覧を許可された店舗ID（給料用とは別のパスワード）
+  savingsUnlockedStoreId?: string;
 }
 
 const sessionOptions: SessionOptions = {
