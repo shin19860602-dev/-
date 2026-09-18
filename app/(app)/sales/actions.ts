@@ -16,6 +16,7 @@ const schema = z.object({
   couponAmount: z.string().optional(),
   menuName: z.string().trim().optional(),
   menuAmount: z.string().optional(),
+  amount: z.string().min(1),
   category: z.string().trim().optional(),
   pointAmount: z.string().optional(),
   productName: z.string().trim().optional(),
@@ -59,9 +60,12 @@ export async function createVisit(formData: FormData) {
     return { ok: false as const, error: "メニューの金額をご確認ください。" };
   }
 
-  const amount = (couponAmount ?? 0) + (menuAmount ?? 0);
-  if (amount <= 0) return { ok: false as const, error: "クーポンまたはメニューを入力してください。" };
+  // 技術売上合計はフォームの自動計算値をそのまま使う（クーポン・メニューを使わず直接入力された場合もこれが正になる）
+  const amount = Number(data.amount);
+  if (!Number.isInteger(amount) || amount <= 0) return { ok: false as const, error: "技術売上合計の金額をご確認ください。" };
+
   const combinedMenuName = [couponName, menuName].filter(Boolean).join("／");
+  if (!combinedMenuName) return { ok: false as const, error: "クーポンまたはメニューの名前を入力してください。" };
 
   const pointAmount = data.pointAmount ? Number(data.pointAmount) : undefined;
   if (pointAmount !== undefined && (!Number.isInteger(pointAmount) || pointAmount <= 0)) {

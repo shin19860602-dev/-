@@ -38,6 +38,7 @@ export default function NewSaleForm({
   const menuAmountRef = useRef<HTMLInputElement>(null);
   const productAmountRef = useRef<HTMLInputElement>(null);
   const kanaRef = useRef<HTMLInputElement>(null);
+  const amountTouchedRef = useRef(false);
   const kanaTouchedRef = useRef(false);
   const kanaBufferRef = useRef("");
   const lastHiraganaRef = useRef("");
@@ -63,11 +64,12 @@ export default function NewSaleForm({
   const menuOptions = useMemo(() => menuMenus.filter((m) => m.storeId === storeId), [menuMenus, storeId]);
   const productOptions = useMemo(() => productMenus.filter((m) => m.storeId === storeId), [productMenus, storeId]);
 
-  // 技術売上＝クーポン金額＋メニュー金額の合計（表示のみ。実際の保存額はサーバー側で再計算する）
+  // 技術売上合計＝クーポン金額＋メニュー金額の合計を自動提案する（手入力したら以後は上書きしない）
   function updateTechnicalTotal() {
+    if (amountTouchedRef.current || !amountRef.current) return;
     const coupon = Number(couponAmountRef.current?.value || "0") || 0;
     const menu = Number(menuAmountRef.current?.value || "0") || 0;
-    if (amountRef.current) amountRef.current.value = String(coupon + menu);
+    amountRef.current.value = String(coupon + menu);
   }
 
   return (
@@ -97,6 +99,7 @@ export default function NewSaleForm({
               kanaTouchedRef.current = false;
               kanaBufferRef.current = "";
               lastHiraganaRef.current = "";
+              amountTouchedRef.current = false;
               if (amountRef.current) amountRef.current.value = "";
               setFormKey((k) => k + 1);
               setJustSaved(true);
@@ -333,7 +336,19 @@ export default function NewSaleForm({
 
           <div>
             <label className="form-label">技術売上合計（円）</label>
-            <input ref={amountRef} className="field-input" type="text" readOnly style={{ background: "var(--surface-muted)" }} />
+            <input
+              ref={amountRef}
+              className="field-input"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              name="amount"
+              required
+              onChange={(e) => {
+                sanitizeAmountInput(e);
+                amountTouchedRef.current = true;
+              }}
+            />
           </div>
           <div>
             <label className="form-label">ポイント売上（円・任意）</label>
