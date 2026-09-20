@@ -335,7 +335,7 @@ export default function NewSaleForm({
           </div>
 
           <div>
-            <label className="form-label">技術売上合計（円）</label>
+            <label className="form-label">技術売上合計（円・店販のみの場合は空欄でOK）</label>
             <input
               ref={amountRef}
               className="field-input"
@@ -343,7 +343,6 @@ export default function NewSaleForm({
               inputMode="numeric"
               pattern="[0-9]*"
               name="amount"
-              required
               onChange={(e) => {
                 sanitizeAmountInput(e);
                 amountTouchedRef.current = true;

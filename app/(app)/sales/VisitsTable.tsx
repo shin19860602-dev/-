@@ -60,7 +60,7 @@ export default function VisitsTable({ visits, canEdit }: { visits: Visit[]; canE
                 <td data-label="担当">{v.staff.name}</td>
                 <td data-label="お客様">{v.customer.name} 様</td>
                 <td data-label="施術内容">
-                  {v.menuName}
+                  {v.menuName || "店販のみ"}
                   {v.category && <span className="card-sub" style={{ margin: 0 }}>分類：{v.category}</span>}
                   {v.productName && <span className="card-sub" style={{ margin: 0 }}>＋店販：{v.productName}</span>}
                   {v.pointAmount ? <span className="card-sub" style={{ margin: 0 }}>＋ポイント{yen(v.pointAmount)}</span> : null}
@@ -147,8 +147,8 @@ function EditRow({ visit, colSpan, onDone }: { visit: Visit; colSpan: number; on
             <input className="field-input" name="date" type="date" defaultValue={toDateInput(visit.date)} required />
           </div>
           <div>
-            <label className="form-label">施術内容</label>
-            <input className="field-input" name="menuName" defaultValue={visit.menuName} required />
+            <label className="form-label">施術内容（店販のみの場合は空欄でOK）</label>
+            <input className="field-input" name="menuName" defaultValue={visit.menuName} />
           </div>
           <div>
             <label className="form-label">技術売上（円）</label>
@@ -158,8 +158,7 @@ function EditRow({ visit, colSpan, onDone }: { visit: Visit; colSpan: number; on
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
-              defaultValue={visit.amount}
-              required
+              defaultValue={visit.amount || ""}
               onChange={sanitizeAmountInput}
             />
           </div>

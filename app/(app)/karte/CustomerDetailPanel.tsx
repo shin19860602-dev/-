@@ -136,7 +136,7 @@ export default function CustomerDetailPanel({ customer, staffOptions }: { custom
             <div className="tl-body">
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                 <div className="tl-title">
-                  {v.menuName}
+                  {v.menuName || "店販のみ"}
                   {v.productName ? `＋店販：${v.productName}` : ""}
                   {v.pointAmount ? `＋ポイント${yen(v.pointAmount)}` : ""}
                 </div>

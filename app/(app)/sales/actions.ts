@@ -16,7 +16,7 @@ const schema = z.object({
   couponAmount: z.string().optional(),
   menuName: z.string().trim().optional(),
   menuAmount: z.string().optional(),
-  amount: z.string().min(1),
+  amount: z.string().optional(),
   category: z.string().trim().optional(),
   pointAmount: z.string().optional(),
   productName: z.string().trim().optional(),
@@ -61,11 +61,21 @@ export async function createVisit(formData: FormData) {
   }
 
   // 技術売上合計はフォームの自動計算値をそのまま使う（クーポン・メニューを使わず直接入力された場合もこれが正になる）
-  const amount = Number(data.amount);
-  if (!Number.isInteger(amount) || amount <= 0) return { ok: false as const, error: "技術売上合計の金額をご確認ください。" };
+  const amountRaw = data.amount ? Number(data.amount) : 0;
+  if (data.amount && !Number.isInteger(amountRaw)) return { ok: false as const, error: "技術売上合計の金額をご確認ください。" };
 
   const combinedMenuName = [couponName, menuName].filter(Boolean).join("／");
-  if (!combinedMenuName) return { ok: false as const, error: "クーポンまたはメニューの名前を入力してください。" };
+  const hasTechnical = combinedMenuName.length > 0 || amountRaw > 0;
+
+  // 施術（技術売上）と店販は、どちらか一方だけでも登録できる（店販だけで来店するお客様もいるため）
+  if (!hasTechnical && !productName) {
+    return { ok: false as const, error: "施術メニューまたは店販の商品を入力してください。" };
+  }
+  if (hasTechnical) {
+    if (!combinedMenuName) return { ok: false as const, error: "クーポンまたはメニューの名前を入力してください。" };
+    if (amountRaw <= 0) return { ok: false as const, error: "技術売上合計の金額をご確認ください。" };
+  }
+  const amount = hasTechnical ? amountRaw : 0;
 
   const pointAmount = data.pointAmount ? Number(data.pointAmount) : undefined;
   if (pointAmount !== undefined && (!Number.isInteger(pointAmount) || pointAmount <= 0)) {
@@ -122,8 +132,8 @@ export async function createVisit(formData: FormData) {
 const updateSchema = z.object({
   visitId: z.string().min(1),
   date: z.string().min(1),
-  menuName: z.string().trim().min(1),
-  amount: z.coerce.number().int().positive(),
+  menuName: z.string().trim().optional(),
+  amount: z.string().optional(),
   category: z.string().trim().optional(),
   pointAmount: z.string().optional(),
   productName: z.string().trim().optional(),
@@ -157,6 +167,21 @@ export async function updateVisit(formData: FormData) {
     return { ok: false as const, error: "ポイント売上の金額をご確認ください。" };
   }
 
+  const menuName = data.menuName || undefined;
+  const amountRaw = data.amount ? Number(data.amount) : 0;
+  if (data.amount && !Number.isInteger(amountRaw)) return { ok: false as const, error: "技術売上の金額をご確認ください。" };
+  const hasTechnical = !!menuName || amountRaw > 0;
+
+  // 施術（技術売上）と店販は、どちらか一方だけでも登録できる（店販だけで来店するお客様もいるため）
+  if (!hasTechnical && !productName) {
+    return { ok: false as const, error: "施術メニューまたは店販の商品を入力してください。" };
+  }
+  if (hasTechnical) {
+    if (!menuName) return { ok: false as const, error: "施術メニューを入力してください。" };
+    if (amountRaw <= 0) return { ok: false as const, error: "技術売上の金額をご確認ください。" };
+  }
+  const amount = hasTechnical ? amountRaw : 0;
+
   const visit = await prisma.visit.findUnique({ where: { id: data.visitId } });
   if (!visit) return { ok: false as const, error: "見つかりません。" };
 
@@ -172,8 +197,8 @@ export async function updateVisit(formData: FormData) {
     where: { id: data.visitId },
     data: {
       date,
-      menuName: data.menuName,
-      amount: data.amount,
+      menuName: menuName ?? "",
+      amount,
       category: data.category || null,
       pointAmount: pointAmount ?? null,
       productName: productName ?? null,

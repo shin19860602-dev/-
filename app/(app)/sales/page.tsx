@@ -149,7 +149,7 @@ export default async function SalesPage({
                 <div className="list-row" key={v.id}>
                   <div className="grow">
                     <div className="title">
-                      {v.customer.name} 様・{v.menuName}
+                      {v.customer.name} 様・{v.menuName || "店販のみ"}
                       {v.productName ? `＋店販：${v.productName}` : ""}
                       {v.pointAmount ? `＋ポイント${yen(v.pointAmount)}` : ""}
                     </div>
