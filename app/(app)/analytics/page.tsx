@@ -3,6 +3,7 @@ import { requireSession } from "@/lib/session";
 import { resolveStoreScope } from "@/lib/scope";
 import { prisma } from "@/lib/prisma";
 import { monthBounds, pctDelta, repeatRate, yen, visitTotal } from "@/lib/analytics";
+import { jstParts } from "@/lib/date";
 import Topbar from "../Topbar";
 import LineChart from "../charts/LineChart";
 import BarList from "../charts/BarList";
@@ -68,7 +69,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   const monthLabels: { label: string; start: Date; end: Date }[] = [];
   for (let i = 5; i >= 0; i--) {
     const b = monthBounds(now, -i);
-    monthLabels.push({ label: `${b.start.getMonth() + 1}月`, start: b.start, end: b.end });
+    monthLabels.push({ label: `${jstParts(b.start).month + 1}月`, start: b.start, end: b.end });
   }
   const repeatValues = await Promise.all(monthLabels.map((m) => repeatRate(storeId, m.start, m.end)));
 

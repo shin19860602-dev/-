@@ -3,6 +3,7 @@ import { requireSession } from "@/lib/session";
 import { resolveStoreScope } from "@/lib/scope";
 import { prisma } from "@/lib/prisma";
 import { givenNameInitial as initial } from "@/lib/format";
+import { jstParts } from "@/lib/date";
 import Topbar from "../Topbar";
 import KarteSearch from "./KarteSearch";
 import NewCustomerForm from "./NewCustomerForm";
@@ -10,7 +11,10 @@ import CustomerDetailPanel from "./CustomerDetailPanel";
 
 const ROLE_LABEL: Record<string, string> = { OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 
-const dateLabel = (d: Date) => `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+const dateLabel = (d: Date) => {
+  const p = jstParts(d);
+  return `${p.year}/${String(p.month + 1).padStart(2, "0")}/${String(p.date).padStart(2, "0")}`;
+};
 
 export default async function KartePage({
   searchParams,

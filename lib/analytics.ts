@@ -1,29 +1,39 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { jstParts, jstDate } from "@/lib/date";
+
+// 「本日」「今月」の境界は、サーバーの実行環境タイムゾーン（Vercel等では通常UTC）ではなく
+// 常に日本時間で判定する（そうしないと深夜0時〜8時台に登録した売上が前日扱いになる）。
 
 export function monthBounds(base: Date, offsetMonths: number) {
-  const start = new Date(base.getFullYear(), base.getMonth() + offsetMonths, 1);
-  const end = new Date(base.getFullYear(), base.getMonth() + offsetMonths + 1, 1);
+  const b = jstParts(base);
+  const start = jstDate(b.year, b.month + offsetMonths, 1);
+  const end = jstDate(b.year, b.month + offsetMonths + 1, 1);
   return { start, end };
 }
 
 export function dayBounds(base: Date, offsetDays: number) {
-  const start = new Date(base.getFullYear(), base.getMonth(), base.getDate() + offsetDays);
-  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
+  const b = jstParts(base);
+  const start = jstDate(b.year, b.month, b.date + offsetDays);
+  const s = jstParts(start);
+  const end = jstDate(s.year, s.month, s.date + 1);
   return { start, end };
 }
 
 // 同じ月日のまま年だけずらす（例: 去年の今日）
 export function sameDayBounds(base: Date, offsetYears: number) {
-  const start = new Date(base.getFullYear() + offsetYears, base.getMonth(), base.getDate());
-  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
+  const b = jstParts(base);
+  const start = jstDate(b.year + offsetYears, b.month, b.date);
+  const s = jstParts(start);
+  const end = jstDate(s.year, s.month, s.date + 1);
   return { start, end };
 }
 
 // その年の1/1〜今日（年間まとめの「年初来」集計に使う）
 export function yearToDateBounds(base: Date, offsetYears: number) {
-  const start = new Date(base.getFullYear() + offsetYears, 0, 1);
-  const end = new Date(base.getFullYear() + offsetYears, base.getMonth(), base.getDate() + 1);
+  const b = jstParts(base);
+  const start = jstDate(b.year + offsetYears, 0, 1);
+  const end = jstDate(b.year + offsetYears, b.month, b.date + 1);
   return { start, end };
 }
 

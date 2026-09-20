@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { monthBounds, yen } from "@/lib/analytics";
+import { jstParts } from "@/lib/date";
 import Topbar from "../../Topbar";
 import BarList from "../../charts/BarList";
 import VintageTabs from "../VintageTabs";
@@ -61,7 +62,7 @@ export default async function VintageDashboardPage() {
         <div className="card card-pad" style={{ marginBottom: 16 }}>
           <div className="card-title">今月の売上</div>
           <div className="card-sub">
-            {now.getFullYear()}年{now.getMonth() + 1}月
+            {jstParts(now).year}年{jstParts(now).month + 1}月
           </div>
           <div className="kpi-value" style={{ marginTop: 4 }}>
             {yen(monthTotal)}

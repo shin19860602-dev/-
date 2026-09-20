@@ -3,6 +3,7 @@ import { requireSession } from "@/lib/session";
 import { resolveStoreScope } from "@/lib/scope";
 import { prisma } from "@/lib/prisma";
 import { yen } from "@/lib/analytics";
+import { jstParts } from "@/lib/date";
 import { salaryGross, salaryDeduction, salaryNet } from "@/lib/payroll";
 import Topbar from "../Topbar";
 import SettingsTabs from "../SettingsTabs";
@@ -39,10 +40,11 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   }
 
   const now = new Date();
+  const nowJst = jstParts(now);
   const monthOptions: { value: string; label: string }[] = [];
   {
-    let y = now.getFullYear();
-    let m = now.getMonth();
+    let y = nowJst.year;
+    let m = nowJst.month;
     for (let i = 0; i < 24; i++) {
       monthOptions.push({ value: `${y}-${String(m + 1).padStart(2, "0")}`, label: `${y}年${m + 1}月` });
       m -= 1;
@@ -52,7 +54,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
       }
     }
   }
-  const defaultMonthValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const defaultMonthValue = `${nowJst.year}-${String(nowJst.month + 1).padStart(2, "0")}`;
   const selectedMonthValue = sp.month && monthOptions.some((o) => o.value === sp.month) ? sp.month : defaultMonthValue;
 
   const staffList = await prisma.staff.findMany({

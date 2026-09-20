@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/session";
 import { resolveStoreScope } from "@/lib/scope";
 import { prisma } from "@/lib/prisma";
+import { jstParts } from "@/lib/date";
 import Topbar from "../../Topbar";
 import SettingsTabs from "../../SettingsTabs";
 import MonthSelect from "../../MonthSelect";
@@ -36,10 +37,11 @@ export default async function StoreSavingsPage({ searchParams }: { searchParams:
   }
 
   const now = new Date();
+  const nowJst = jstParts(now);
   const monthOptions: { value: string; label: string }[] = [];
   {
-    let y = now.getFullYear();
-    let m = now.getMonth();
+    let y = nowJst.year;
+    let m = nowJst.month;
     for (let i = 0; i < 24; i++) {
       monthOptions.push({ value: `${y}-${String(m + 1).padStart(2, "0")}`, label: `${y}年${m + 1}月` });
       m -= 1;
@@ -49,7 +51,7 @@ export default async function StoreSavingsPage({ searchParams }: { searchParams:
       }
     }
   }
-  const defaultMonthValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const defaultMonthValue = `${nowJst.year}-${String(nowJst.month + 1).padStart(2, "0")}`;
   const selectedMonthValue = sp.month && monthOptions.some((o) => o.value === sp.month) ? sp.month : defaultMonthValue;
 
   const stores = await prisma.store.findMany({

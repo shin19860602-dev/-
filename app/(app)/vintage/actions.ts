@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
+import { jstDateWithTimeOf } from "@/lib/date";
 
 const schema = z.object({
   storeId: z.string().min(1),
@@ -30,10 +31,8 @@ export async function createVintageSale(formData: FormData) {
   const storeId = session.role === "OWNER" ? data.storeId : session.storeId!;
   const staffId = session.staffId!;
 
-  const [y, m, d] = data.date.split("-").map(Number);
-  if (!y || !m || !d) return { ok: false as const, error: "日付をご確認ください。" };
-  const now = new Date();
-  const date = new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds());
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date)) return { ok: false as const, error: "日付をご確認ください。" };
+  const date = jstDateWithTimeOf(data.date, new Date());
 
   await prisma.vintageSale.create({
     data: {
@@ -83,10 +82,8 @@ export async function updateVintageSale(formData: FormData) {
   const session = await canManageSale(sale.storeId);
   if (!session) return { ok: false as const, error: "権限がありません。" };
 
-  const [y, mo, d] = data.date.split("-").map(Number);
-  if (!y || !mo || !d) return { ok: false as const, error: "日付をご確認ください。" };
-  const original = sale.date;
-  const date = new Date(y, mo - 1, d, original.getHours(), original.getMinutes(), original.getSeconds());
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date)) return { ok: false as const, error: "日付をご確認ください。" };
+  const date = jstDateWithTimeOf(data.date, sale.date);
 
   await prisma.vintageSale.update({
     where: { id: data.saleId },

@@ -3,6 +3,7 @@ import { requireSession } from "@/lib/session";
 import { resolveStoreScope } from "@/lib/scope";
 import { prisma } from "@/lib/prisma";
 import { dayBounds, monthBounds, sameDayBounds, findVisits, yen, visitTotal, pctDelta } from "@/lib/analytics";
+import { jstParts } from "@/lib/date";
 import Topbar from "../Topbar";
 import SalesFilters from "./SalesFilters";
 import NewSaleForm from "./NewSaleForm";
@@ -11,7 +12,10 @@ import VisitsTable from "./VisitsTable";
 const ROLE_LABEL: Record<string, string> = { OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 const GENDER_LABEL: Record<string, string> = { male: "男性", female: "女性", other: "その他" };
 const PAYMENT_LABEL: Record<string, string> = { cash: "現金", credit: "クレジット" };
-const timeLabel = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+const timeLabel = (d: Date) => {
+  const p = jstParts(d);
+  return `${String(p.hours).padStart(2, "0")}:${String(p.minutes).padStart(2, "0")}`;
+};
 
 function genderBreakdown(visits: { customer: { id: string; gender: string | null } }[]) {
   const seen = new Map<string, string | null>();
@@ -78,7 +82,8 @@ export default async function SalesPage({
   const { customerCount: todayCustomerCount, counts: todayGenderCounts } = genderBreakdown(todayVisits);
   const lastYearTodayTotal = lastYearTodayVisits.reduce((a, v) => a + visitTotal(v), 0);
   const yoyTodayDelta = pctDelta(todayTotal, lastYearTodayTotal);
-  const lastYearDateLabel = `${lastYearToday.start.getFullYear()}/${String(lastYearToday.start.getMonth() + 1).padStart(2, "0")}/${String(lastYearToday.start.getDate()).padStart(2, "0")}`;
+  const lastYearTodayParts = jstParts(lastYearToday.start);
+  const lastYearDateLabel = `${lastYearTodayParts.year}/${String(lastYearTodayParts.month + 1).padStart(2, "0")}/${String(lastYearTodayParts.date).padStart(2, "0")}`;
 
   return (
     <>

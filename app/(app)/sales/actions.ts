@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
+import { jstDateWithTimeOf } from "@/lib/date";
 
 const schema = z.object({
   storeId: z.string().min(1),
@@ -100,10 +101,8 @@ export async function createVisit(formData: FormData) {
   const customer = await prisma.customer.findFirst({ where: { id: customerId, storeId } });
   if (!customer) return { ok: false as const, error: "お客様が選択した店舗と一致しません。" };
 
-  const [dateY, dateM, dateD] = data.date.split("-").map(Number);
-  if (!dateY || !dateM || !dateD) return { ok: false as const, error: "日付をご確認ください。" };
-  const now = new Date();
-  const date = new Date(dateY, dateM - 1, dateD, now.getHours(), now.getMinutes(), now.getSeconds());
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date)) return { ok: false as const, error: "日付をご確認ください。" };
+  const date = jstDateWithTimeOf(data.date, new Date());
 
   await prisma.visit.create({
     data: {
@@ -188,10 +187,8 @@ export async function updateVisit(formData: FormData) {
   const session = await canManageVisit(visit.storeId);
   if (!session) return { ok: false as const, error: "権限がありません。" };
 
-  const [dateY, dateM, dateD] = data.date.split("-").map(Number);
-  if (!dateY || !dateM || !dateD) return { ok: false as const, error: "日付をご確認ください。" };
-  const original = visit.date;
-  const date = new Date(dateY, dateM - 1, dateD, original.getHours(), original.getMinutes(), original.getSeconds());
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date)) return { ok: false as const, error: "日付をご確認ください。" };
+  const date = jstDateWithTimeOf(data.date, visit.date);
 
   await prisma.visit.update({
     where: { id: data.visitId },

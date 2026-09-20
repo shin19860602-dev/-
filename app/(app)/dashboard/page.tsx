@@ -3,6 +3,7 @@ import { requireSession } from "@/lib/session";
 import { resolveStoreScope } from "@/lib/scope";
 import { prisma } from "@/lib/prisma";
 import { dayBounds, monthBounds, yearToDateBounds, pctDelta, repeatRate, findVisits, yen, visitTotal, summarizeVisits } from "@/lib/analytics";
+import { jstParts, jstDate } from "@/lib/date";
 import Topbar from "../Topbar";
 import LineChart from "../charts/LineChart";
 import BarList from "../charts/BarList";
@@ -11,7 +12,10 @@ import SummaryStats from "../SummaryStats";
 import MonthSelect from "../MonthSelect";
 
 const ROLE_LABEL: Record<string, string> = { OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
-const timeLabel = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+const timeLabel = (d: Date) => {
+  const p = jstParts(d);
+  return `${String(p.hours).padStart(2, "0")}:${String(p.minutes).padStart(2, "0")}`;
+};
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ store?: string; month?: string }> }) {
   const session = await requireSession();
@@ -34,12 +38,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   // 月次まとめ：過去の任意の月を選んで見られるようにする（データが無い月まで遡らない）
   const earliestVisit = await prisma.visit.aggregate({ where: { storeId: storeId ?? undefined }, _min: { date: true } });
   const earliestDate = earliestVisit._min.date ?? now;
+  const nowJst = jstParts(now);
+  const earliestJst = jstParts(earliestDate);
   const monthOptions: { value: string; label: string }[] = [];
   {
-    let y = now.getFullYear();
-    let m = now.getMonth();
-    const endY = earliestDate.getFullYear();
-    const endM = earliestDate.getMonth();
+    let y = nowJst.year;
+    let m = nowJst.month;
+    const endY = earliestJst.year;
+    const endM = earliestJst.month;
     while (y > endY || (y === endY && m >= endM)) {
       monthOptions.push({ value: `${y}-${String(m + 1).padStart(2, "0")}`, label: `${y}年${m + 1}月` });
       m -= 1;
@@ -49,10 +55,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       }
     }
   }
-  const defaultMonthValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const defaultMonthValue = `${nowJst.year}-${String(nowJst.month + 1).padStart(2, "0")}`;
   const selectedMonthValue = sp.month && monthOptions.some((o) => o.value === sp.month) ? sp.month : defaultMonthValue;
   const [selYear, selMonth] = selectedMonthValue.split("-").map(Number);
-  const selectedBase = new Date(selYear, selMonth - 1, 1);
+  const selectedBase = jstDate(selYear, selMonth - 1, 1);
   const summaryMonth = monthBounds(selectedBase, 0);
   const summaryCompareMonth = monthBounds(selectedBase, -12);
 
@@ -139,7 +145,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const monthLabels: { label: string; start: Date; end: Date }[] = [];
   for (let i = 5; i >= 0; i--) {
     const b = monthBounds(now, -i);
-    monthLabels.push({ label: `${b.start.getMonth() + 1}月`, start: b.start, end: b.end });
+    monthLabels.push({ label: `${jstParts(b.start).month + 1}月`, start: b.start, end: b.end });
   }
   const trendTargets = storeId ? allStores.filter((s) => s.id === storeId) : allStores;
   const trendSeries = trendTargets.map((s) => ({
@@ -173,14 +179,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const dailyLabels: string[] = [];
   const dailyThisYear: number[] = [];
   const dailyLastYear: number[] = [];
-  for (let d = 1; d <= now.getDate(); d++) {
-    const dayStart = new Date(now.getFullYear(), now.getMonth(), d);
-    const dayEnd = new Date(now.getFullYear(), now.getMonth(), d + 1);
-    dailyLabels.push(`${d}(${WEEKDAY_JA[dayStart.getDay()]})`);
+  for (let d = 1; d <= nowJst.date; d++) {
+    const dayStart = jstDate(nowJst.year, nowJst.month, d);
+    const dayEnd = jstDate(nowJst.year, nowJst.month, d + 1);
+    dailyLabels.push(`${d}(${WEEKDAY_JA[jstParts(dayStart).day]})`);
     dailyThisYear.push(trendRows.filter((r) => r.date >= dayStart && r.date < dayEnd).reduce((a, r) => a + visitTotal(r), 0));
 
-    const lastYearDayStart = new Date(now.getFullYear() - 1, now.getMonth(), d);
-    const lastYearDayEnd = new Date(now.getFullYear() - 1, now.getMonth(), d + 1);
+    const lastYearDayStart = jstDate(nowJst.year - 1, nowJst.month, d);
+    const lastYearDayEnd = jstDate(nowJst.year - 1, nowJst.month, d + 1);
     dailyLastYear.push(
       lastYearTrendRows.filter((r) => r.date >= lastYearDayStart && r.date < lastYearDayEnd).reduce((a, r) => a + visitTotal(r), 0)
     );
@@ -263,13 +269,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <div className="card card-pad" style={{ marginBottom: 16 }}>
           <div className="card-title">日次売上推移（前年比較）</div>
           <div className="card-sub">
-            {scopeLabel}・{now.getFullYear()}年{now.getMonth() + 1}月（曜日つき・去年の同日と比較）
+            {scopeLabel}・{nowJst.year}年{nowJst.month + 1}月（曜日つき・去年の同日と比較）
           </div>
           <LineChart
             categories={dailyLabels}
             series={[
-              { key: "this", label: `${now.getFullYear()}年`, color: "var(--accent)", values: dailyThisYear.map((v) => v / 10000) },
-              { key: "last", label: `${now.getFullYear() - 1}年`, color: "var(--text-faint)", values: dailyLastYear.map((v) => v / 10000) },
+              { key: "this", label: `${nowJst.year}年`, color: "var(--accent)", values: dailyThisYear.map((v) => v / 10000) },
+              { key: "last", label: `${nowJst.year - 1}年`, color: "var(--text-faint)", values: dailyLastYear.map((v) => v / 10000) },
             ]}
             unit="万円"
             valueFormatter={(v) => v.toFixed(0)}
@@ -349,7 +355,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <div className="card card-pad" style={{ marginBottom: 16 }}>
           <div className="card-title">年間まとめ</div>
           <div className="card-sub">
-            {scopeLabel}・{yearToDate.start.getFullYear()}年1月〜本日（対 去年同期間）
+            {scopeLabel}・{nowJst.year}年1月〜本日（対 去年同期間）
           </div>
           <SummaryStats summary={yearSummary} compare={yearCompareSummary} />
           <div style={{ marginTop: 16 }}>

@@ -1,3 +1,5 @@
+import { jstParts } from "@/lib/date";
+
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
 export default function Topbar({
@@ -9,8 +11,8 @@ export default function Topbar({
   scopeLabel: string;
   roleLabel: string;
 }) {
-  const now = new Date();
-  const dateLabel = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日（${WEEKDAYS[now.getDay()]}）`;
+  const now = jstParts();
+  const dateLabel = `${now.year}年${now.month + 1}月${now.date}日（${WEEKDAYS[now.day]}）`;
 
   return (
     <div className="topbar">
