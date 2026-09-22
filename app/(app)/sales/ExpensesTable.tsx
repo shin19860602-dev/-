@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateExpense, deleteExpense, EXPENSE_CATEGORIES } from "./expenseActions";
+import { updateExpense, deleteExpense } from "./expenseActions";
+import { EXPENSE_CATEGORIES } from "@/lib/expenseCategories";
 import { yen } from "@/lib/analytics";
 import { sanitizeAmountInput } from "@/lib/format";
 

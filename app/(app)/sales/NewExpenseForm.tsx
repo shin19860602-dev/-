@@ -2,7 +2,8 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createExpense, EXPENSE_CATEGORIES } from "./expenseActions";
+import { createExpense } from "./expenseActions";
+import { EXPENSE_CATEGORIES } from "@/lib/expenseCategories";
 import { sanitizeAmountInput } from "@/lib/format";
 
 type Store = { id: string; name: string };
