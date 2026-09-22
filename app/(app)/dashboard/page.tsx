@@ -91,7 +91,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     prisma.store.findMany({ where: { kind: { not: "VINTAGE" } }, orderBy: { createdAt: "asc" } }),
     prisma.visit.findMany({
       where: { storeId, date: { gte: sixMonthsAgo.start, lt: thisMonth.end } },
-      select: { storeId: true, amount: true, productAmount: true, pointAmount: true, date: true },
+      select: { storeId: true, amount: true, productAmount: true, pointAmount: true, paymentMethod: true, date: true },
     }),
     prisma.visit.findMany({
       where: { storeId, date: { gte: lastYearTrendStart, lt: lastYearTrendEnd } },
@@ -103,7 +103,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   const thisMonthExpenses = await prisma.expense.findMany({
     where: { storeId: storeId ?? undefined, date: { gte: thisMonth.start, lt: thisMonth.end } },
-    select: { date: true, amount: true },
+    select: { date: true, amount: true, category: true },
   });
   const thisMonthExpenseTotal = thisMonthExpenses.reduce((a, e) => a + e.amount, 0);
 
@@ -187,8 +187,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const dailyWeekday: string[] = [];
   const dailyThisYear: number[] = [];
   const dailyLastYear: number[] = [];
-  const dailyVisitCount: number[] = [];
   const dailyExpense: number[] = [];
+  const dailyTechCash: number[] = [];
+  const dailyTechCredit: number[] = [];
+  const dailyTechPoint: number[] = [];
+  const dailyProductCash: number[] = [];
+  const dailyProductCredit: number[] = [];
+  const dailyExpensePurchase: number[] = [];
+  const dailyExpenseSupplies: number[] = [];
+  const dailyExpenseParking: number[] = [];
+  const dailyExpenseOther: number[] = [];
   for (let d = 1; d <= nowJst.date; d++) {
     const dayStart = jstDate(nowJst.year, nowJst.month, d);
     const dayEnd = jstDate(nowJst.year, nowJst.month, d + 1);
@@ -198,8 +206,18 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     dailyWeekday.push(weekday);
     const dayVisits = trendRows.filter((r) => r.date >= dayStart && r.date < dayEnd);
     dailyThisYear.push(dayVisits.reduce((a, r) => a + visitTotal(r), 0));
-    dailyVisitCount.push(dayVisits.length);
-    dailyExpense.push(thisMonthExpenses.filter((e) => e.date >= dayStart && e.date < dayEnd).reduce((a, e) => a + e.amount, 0));
+    dailyTechCash.push(dayVisits.filter((r) => r.paymentMethod === "cash").reduce((a, r) => a + r.amount, 0));
+    dailyTechCredit.push(dayVisits.filter((r) => r.paymentMethod === "credit").reduce((a, r) => a + r.amount, 0));
+    dailyTechPoint.push(dayVisits.reduce((a, r) => a + (r.pointAmount ?? 0), 0));
+    dailyProductCash.push(dayVisits.filter((r) => r.paymentMethod === "cash").reduce((a, r) => a + (r.productAmount ?? 0), 0));
+    dailyProductCredit.push(dayVisits.filter((r) => r.paymentMethod === "credit").reduce((a, r) => a + (r.productAmount ?? 0), 0));
+
+    const dayExpenses = thisMonthExpenses.filter((e) => e.date >= dayStart && e.date < dayEnd);
+    dailyExpense.push(dayExpenses.reduce((a, e) => a + e.amount, 0));
+    dailyExpensePurchase.push(dayExpenses.filter((e) => e.category === "仕入").reduce((a, e) => a + e.amount, 0));
+    dailyExpenseSupplies.push(dayExpenses.filter((e) => e.category === "消耗品").reduce((a, e) => a + e.amount, 0));
+    dailyExpenseParking.push(dayExpenses.filter((e) => e.category === "駐車場").reduce((a, e) => a + e.amount, 0));
+    dailyExpenseOther.push(dayExpenses.filter((e) => e.category === "その他").reduce((a, e) => a + e.amount, 0));
 
     const lastYearDayStart = jstDate(nowJst.year - 1, nowJst.month, d);
     const lastYearDayEnd = jstDate(nowJst.year - 1, nowJst.month, d + 1);
@@ -301,54 +319,86 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <div className="card card-pad" style={{ marginBottom: 16 }}>
           <div className="card-title">日別売上一覧</div>
           <div className="card-sub">
-            {scopeLabel}・{nowJst.year}年{nowJst.month + 1}月（前年同日と比較）・経費合計 {yen(thisMonthExpenseTotal)}
+            {scopeLabel}・{nowJst.year}年{nowJst.month + 1}月・経費合計 {yen(thisMonthExpenseTotal)}
           </div>
           <div className="table-wrap table-scroll">
             <table>
               <thead>
                 <tr>
-                  <th>日付</th>
-                  <th style={{ textAlign: "right" }}>売上</th>
-                  <th style={{ textAlign: "right" }}>件数</th>
-                  <th style={{ textAlign: "right" }}>経費</th>
-                  <th style={{ textAlign: "right" }}>差引</th>
-                  <th style={{ textAlign: "right" }}>前年同日</th>
-                  <th style={{ textAlign: "right" }}>前年比</th>
+                  <th rowSpan={2}>日付</th>
+                  <th colSpan={4} style={{ textAlign: "center" }}>技術売上</th>
+                  <th colSpan={3} style={{ textAlign: "center" }}>商品売上</th>
+                  <th colSpan={5} style={{ textAlign: "center" }}>経費</th>
+                  <th rowSpan={2} style={{ textAlign: "right" }}>差引</th>
+                </tr>
+                <tr>
+                  <th style={{ textAlign: "right" }}>現金</th>
+                  <th style={{ textAlign: "right" }}>クレジット</th>
+                  <th style={{ textAlign: "right" }}>ポイント</th>
+                  <th style={{ textAlign: "right" }}>小計</th>
+                  <th style={{ textAlign: "right" }}>現金</th>
+                  <th style={{ textAlign: "right" }}>クレジット</th>
+                  <th style={{ textAlign: "right" }}>小計</th>
+                  <th style={{ textAlign: "right" }}>仕入</th>
+                  <th style={{ textAlign: "right" }}>消耗品</th>
+                  <th style={{ textAlign: "right" }}>駐車場</th>
+                  <th style={{ textAlign: "right" }}>その他</th>
+                  <th style={{ textAlign: "right" }}>小計</th>
                 </tr>
               </thead>
               <tbody>
                 {dailyDateLabels.map((label, i) => {
-                  const delta = pctDelta(dailyThisYear[i], dailyLastYear[i]);
+                  const techSubtotal = dailyTechCash[i] + dailyTechCredit[i] + dailyTechPoint[i];
+                  const productSubtotal = dailyProductCash[i] + dailyProductCredit[i];
                   const net = dailyThisYear[i] - dailyExpense[i];
                   return (
                     <tr key={label}>
                       <td data-label="日付">
                         {label}（{dailyWeekday[i]}）
                       </td>
-                      <td data-label="売上" style={{ textAlign: "right" }}>
-                        {yen(dailyThisYear[i])}
-                      </td>
-                      <td data-label="件数" style={{ textAlign: "right" }}>
-                        {dailyVisitCount[i]}件
-                      </td>
-                      <td data-label="経費" style={{ textAlign: "right" }}>
-                        {yen(dailyExpense[i])}
-                      </td>
-                      <td data-label="差引" style={{ textAlign: "right" }}>
-                        {yen(net)}
-                      </td>
-                      <td data-label="前年同日" style={{ textAlign: "right" }}>
-                        {yen(dailyLastYear[i])}
-                      </td>
-                      <td data-label="前年比" style={{ textAlign: "right" }}>
-                        <span className={`kpi-delta ${delta.dir === "down" ? "down" : "up"}`}>
-                          {delta.dir === "down" ? "▼" : "▲"} {delta.pct.toFixed(1)}%
-                        </span>
-                      </td>
+                      <td data-label="技術・現金" style={{ textAlign: "right" }}>{yen(dailyTechCash[i])}</td>
+                      <td data-label="技術・クレジット" style={{ textAlign: "right" }}>{yen(dailyTechCredit[i])}</td>
+                      <td data-label="技術・ポイント" style={{ textAlign: "right" }}>{yen(dailyTechPoint[i])}</td>
+                      <td data-label="技術・小計" style={{ textAlign: "right", fontWeight: 700 }}>{yen(techSubtotal)}</td>
+                      <td data-label="商品・現金" style={{ textAlign: "right" }}>{yen(dailyProductCash[i])}</td>
+                      <td data-label="商品・クレジット" style={{ textAlign: "right" }}>{yen(dailyProductCredit[i])}</td>
+                      <td data-label="商品・小計" style={{ textAlign: "right", fontWeight: 700 }}>{yen(productSubtotal)}</td>
+                      <td data-label="仕入" style={{ textAlign: "right" }}>{yen(dailyExpensePurchase[i])}</td>
+                      <td data-label="消耗品" style={{ textAlign: "right" }}>{yen(dailyExpenseSupplies[i])}</td>
+                      <td data-label="駐車場" style={{ textAlign: "right" }}>{yen(dailyExpenseParking[i])}</td>
+                      <td data-label="その他" style={{ textAlign: "right" }}>{yen(dailyExpenseOther[i])}</td>
+                      <td data-label="経費・小計" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyExpense[i])}</td>
+                      <td data-label="差引" style={{ textAlign: "right", fontWeight: 700 }}>{yen(net)}</td>
                     </tr>
                   );
                 })}
               </tbody>
+              {dailyDateLabels.length > 0 && (
+                <tfoot>
+                  <tr>
+                    <td data-label="合計" style={{ fontWeight: 700 }}>合計</td>
+                    <td data-label="技術・現金" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyTechCash.reduce((a, v) => a + v, 0))}</td>
+                    <td data-label="技術・クレジット" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyTechCredit.reduce((a, v) => a + v, 0))}</td>
+                    <td data-label="技術・ポイント" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyTechPoint.reduce((a, v) => a + v, 0))}</td>
+                    <td data-label="技術・小計" style={{ textAlign: "right", fontWeight: 700 }}>
+                      {yen(dailyTechCash.reduce((a, v) => a + v, 0) + dailyTechCredit.reduce((a, v) => a + v, 0) + dailyTechPoint.reduce((a, v) => a + v, 0))}
+                    </td>
+                    <td data-label="商品・現金" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyProductCash.reduce((a, v) => a + v, 0))}</td>
+                    <td data-label="商品・クレジット" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyProductCredit.reduce((a, v) => a + v, 0))}</td>
+                    <td data-label="商品・小計" style={{ textAlign: "right", fontWeight: 700 }}>
+                      {yen(dailyProductCash.reduce((a, v) => a + v, 0) + dailyProductCredit.reduce((a, v) => a + v, 0))}
+                    </td>
+                    <td data-label="仕入" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyExpensePurchase.reduce((a, v) => a + v, 0))}</td>
+                    <td data-label="消耗品" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyExpenseSupplies.reduce((a, v) => a + v, 0))}</td>
+                    <td data-label="駐車場" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyExpenseParking.reduce((a, v) => a + v, 0))}</td>
+                    <td data-label="その他" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyExpenseOther.reduce((a, v) => a + v, 0))}</td>
+                    <td data-label="経費・小計" style={{ textAlign: "right", fontWeight: 700 }}>{yen(thisMonthExpenseTotal)}</td>
+                    <td data-label="差引" style={{ textAlign: "right", fontWeight: 700 }}>
+                      {yen(dailyThisYear.reduce((a, v) => a + v, 0) - thisMonthExpenseTotal)}
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
             {dailyDateLabels.length === 0 && <div className="card-sub" style={{ padding: 20 }}>今月の記録はまだありません。</div>}
           </div>
