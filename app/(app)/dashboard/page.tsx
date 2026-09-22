@@ -196,6 +196,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const dailyExpensePurchase: number[] = [];
   const dailyExpenseSupplies: number[] = [];
   const dailyExpenseParking: number[] = [];
+  const dailyExpenseHPB: number[] = [];
+  const dailyExpenseUtilities: number[] = [];
   const dailyExpenseOther: number[] = [];
   for (let d = 1; d <= nowJst.date; d++) {
     const dayStart = jstDate(nowJst.year, nowJst.month, d);
@@ -217,6 +219,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     dailyExpensePurchase.push(dayExpenses.filter((e) => e.category === "仕入").reduce((a, e) => a + e.amount, 0));
     dailyExpenseSupplies.push(dayExpenses.filter((e) => e.category === "消耗品").reduce((a, e) => a + e.amount, 0));
     dailyExpenseParking.push(dayExpenses.filter((e) => e.category === "駐車場").reduce((a, e) => a + e.amount, 0));
+    dailyExpenseHPB.push(dayExpenses.filter((e) => e.category === "HPB").reduce((a, e) => a + e.amount, 0));
+    dailyExpenseUtilities.push(dayExpenses.filter((e) => e.category === "光熱費").reduce((a, e) => a + e.amount, 0));
     dailyExpenseOther.push(dayExpenses.filter((e) => e.category === "その他").reduce((a, e) => a + e.amount, 0));
 
     const lastYearDayStart = jstDate(nowJst.year - 1, nowJst.month, d);
@@ -328,7 +332,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                   <th rowSpan={2}>日付</th>
                   <th colSpan={4} style={{ textAlign: "center" }}>技術売上</th>
                   <th colSpan={3} style={{ textAlign: "center" }}>商品売上</th>
-                  <th colSpan={5} style={{ textAlign: "center" }}>経費</th>
+                  <th colSpan={7} style={{ textAlign: "center" }}>経費</th>
                   <th rowSpan={2} style={{ textAlign: "right" }}>差引</th>
                 </tr>
                 <tr>
@@ -342,6 +346,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                   <th style={{ textAlign: "right" }}>仕入</th>
                   <th style={{ textAlign: "right" }}>消耗品</th>
                   <th style={{ textAlign: "right" }}>駐車場</th>
+                  <th style={{ textAlign: "right" }}>HPB</th>
+                  <th style={{ textAlign: "right" }}>光熱費</th>
                   <th style={{ textAlign: "right" }}>その他</th>
                   <th style={{ textAlign: "right" }}>小計</th>
                 </tr>
@@ -366,6 +372,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                       <td data-label="仕入" style={{ textAlign: "right" }}>{yen(dailyExpensePurchase[i])}</td>
                       <td data-label="消耗品" style={{ textAlign: "right" }}>{yen(dailyExpenseSupplies[i])}</td>
                       <td data-label="駐車場" style={{ textAlign: "right" }}>{yen(dailyExpenseParking[i])}</td>
+                      <td data-label="HPB" style={{ textAlign: "right" }}>{yen(dailyExpenseHPB[i])}</td>
+                      <td data-label="光熱費" style={{ textAlign: "right" }}>{yen(dailyExpenseUtilities[i])}</td>
                       <td data-label="その他" style={{ textAlign: "right" }}>{yen(dailyExpenseOther[i])}</td>
                       <td data-label="経費・小計" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyExpense[i])}</td>
                       <td data-label="差引" style={{ textAlign: "right", fontWeight: 700 }}>{yen(net)}</td>
@@ -391,6 +399,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     <td data-label="仕入" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyExpensePurchase.reduce((a, v) => a + v, 0))}</td>
                     <td data-label="消耗品" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyExpenseSupplies.reduce((a, v) => a + v, 0))}</td>
                     <td data-label="駐車場" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyExpenseParking.reduce((a, v) => a + v, 0))}</td>
+                    <td data-label="HPB" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyExpenseHPB.reduce((a, v) => a + v, 0))}</td>
+                    <td data-label="光熱費" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyExpenseUtilities.reduce((a, v) => a + v, 0))}</td>
                     <td data-label="その他" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyExpenseOther.reduce((a, v) => a + v, 0))}</td>
                     <td data-label="経費・小計" style={{ textAlign: "right", fontWeight: 700 }}>{yen(thisMonthExpenseTotal)}</td>
                     <td data-label="差引" style={{ textAlign: "right", fontWeight: 700 }}>
