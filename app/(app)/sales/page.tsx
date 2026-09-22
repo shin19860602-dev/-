@@ -106,6 +106,12 @@ export default async function SalesPage({
           productMenus={productMenus}
         />
 
+        <NewExpenseForm
+          isOwner={session.role === "OWNER"}
+          fixedStoreId={storeId}
+          stores={allStores.map((s) => ({ id: s.id, name: s.name }))}
+        />
+
         <div className="card card-pad" style={{ marginBottom: 16 }}>
           <div className="card-title">本日のまとめ</div>
           <div className="card-sub">{scopeLabel}</div>
@@ -190,15 +196,7 @@ export default async function SalesPage({
           <VisitsTable visits={visits} canEdit={true} />
         </div>
 
-        <div style={{ marginTop: 24 }}>
-          <NewExpenseForm
-            isOwner={session.role === "OWNER"}
-            fixedStoreId={storeId}
-            stores={allStores.map((s) => ({ id: s.id, name: s.name }))}
-          />
-        </div>
-
-        <div className="card card-pad" style={{ marginBottom: 16 }}>
+        <div className="card card-pad" style={{ marginTop: 24, marginBottom: 16 }}>
           <div className="card-title">本日の経費</div>
           <div className="card-sub">{scopeLabel}</div>
 
