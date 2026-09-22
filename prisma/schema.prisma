@@ -45,6 +45,7 @@ model Store {
   vintageSales VintageSale[]
   vintageTags  VintageTag[]
   storeSavings StoreSavings[]
+  expenses     Expense[]
 }
 
 // スタッフ（オーナー／マネージャー／スタッフ）
@@ -73,6 +74,7 @@ model Staff {
   primaryCustomers  Customer[] @relation("PrimaryStaff")
   salaries          Salary[]
   vintageSales      VintageSale[]
+  expenses          Expense[]
 }
 
 // お客様（カルテ台帳）
@@ -200,6 +202,23 @@ model VintageSale {
   amount        Int // 金額（円）
   paymentMethod String? // "cash"（現金） | "credit"（クレジット）
   memo          String?
+
+  createdAt DateTime @default(now())
+}
+
+// 経費（日々の支出）。仕入・消耗品・駐車場代など、売上と同じ感覚で毎日入力する。
+model Expense {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  staffId String
+  staff   Staff  @relation(fields: [staffId], references: [id])
+
+  date     DateTime
+  category String // "仕入" | "消耗品" | "駐車場" | "その他"
+  amount   Int // 金額（円）
+  memo     String?
 
   createdAt DateTime @default(now())
 }

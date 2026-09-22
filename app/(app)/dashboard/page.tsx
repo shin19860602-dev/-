@@ -101,6 +101,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     findVisits({ storeId, date: { gte: summaryCompareMonth.start, lt: summaryCompareMonth.end } }),
   ]);
 
+  const thisMonthExpenses = await prisma.expense.findMany({
+    where: { storeId: storeId ?? undefined, date: { gte: thisMonth.start, lt: thisMonth.end } },
+    select: { date: true, amount: true },
+  });
+  const thisMonthExpenseTotal = thisMonthExpenses.reduce((a, e) => a + e.amount, 0);
+
   const monthSummary = summarizeVisits(summaryMonthVisits);
   const monthCompareSummary = summarizeVisits(summaryCompareVisits);
   const yearSummary = summarizeVisits(thisYearVisits);
@@ -177,13 +183,23 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   // 日次売上推移（今月・曜日つき・前年同日比較）
   const WEEKDAY_JA = ["日", "月", "火", "水", "木", "金", "土"];
   const dailyLabels: string[] = [];
+  const dailyDateLabels: string[] = [];
+  const dailyWeekday: string[] = [];
   const dailyThisYear: number[] = [];
   const dailyLastYear: number[] = [];
+  const dailyVisitCount: number[] = [];
+  const dailyExpense: number[] = [];
   for (let d = 1; d <= nowJst.date; d++) {
     const dayStart = jstDate(nowJst.year, nowJst.month, d);
     const dayEnd = jstDate(nowJst.year, nowJst.month, d + 1);
-    dailyLabels.push(`${d}(${WEEKDAY_JA[jstParts(dayStart).day]})`);
-    dailyThisYear.push(trendRows.filter((r) => r.date >= dayStart && r.date < dayEnd).reduce((a, r) => a + visitTotal(r), 0));
+    const weekday = WEEKDAY_JA[jstParts(dayStart).day];
+    dailyLabels.push(`${d}(${weekday})`);
+    dailyDateLabels.push(`${nowJst.month + 1}/${d}`);
+    dailyWeekday.push(weekday);
+    const dayVisits = trendRows.filter((r) => r.date >= dayStart && r.date < dayEnd);
+    dailyThisYear.push(dayVisits.reduce((a, r) => a + visitTotal(r), 0));
+    dailyVisitCount.push(dayVisits.length);
+    dailyExpense.push(thisMonthExpenses.filter((e) => e.date >= dayStart && e.date < dayEnd).reduce((a, e) => a + e.amount, 0));
 
     const lastYearDayStart = jstDate(nowJst.year - 1, nowJst.month, d);
     const lastYearDayEnd = jstDate(nowJst.year - 1, nowJst.month, d + 1);
@@ -280,6 +296,62 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             unit="万円"
             valueFormatter={(v) => v.toFixed(0)}
           />
+        </div>
+
+        <div className="card card-pad" style={{ marginBottom: 16 }}>
+          <div className="card-title">日別売上一覧</div>
+          <div className="card-sub">
+            {scopeLabel}・{nowJst.year}年{nowJst.month + 1}月（前年同日と比較）・経費合計 {yen(thisMonthExpenseTotal)}
+          </div>
+          <div className="table-wrap table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>日付</th>
+                  <th style={{ textAlign: "right" }}>売上</th>
+                  <th style={{ textAlign: "right" }}>件数</th>
+                  <th style={{ textAlign: "right" }}>経費</th>
+                  <th style={{ textAlign: "right" }}>差引</th>
+                  <th style={{ textAlign: "right" }}>前年同日</th>
+                  <th style={{ textAlign: "right" }}>前年比</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dailyDateLabels.map((label, i) => {
+                  const delta = pctDelta(dailyThisYear[i], dailyLastYear[i]);
+                  const net = dailyThisYear[i] - dailyExpense[i];
+                  return (
+                    <tr key={label}>
+                      <td data-label="日付">
+                        {label}（{dailyWeekday[i]}）
+                      </td>
+                      <td data-label="売上" style={{ textAlign: "right" }}>
+                        {yen(dailyThisYear[i])}
+                      </td>
+                      <td data-label="件数" style={{ textAlign: "right" }}>
+                        {dailyVisitCount[i]}件
+                      </td>
+                      <td data-label="経費" style={{ textAlign: "right" }}>
+                        {yen(dailyExpense[i])}
+                      </td>
+                      <td data-label="差引" style={{ textAlign: "right" }}>
+                        {yen(net)}
+                      </td>
+                      <td data-label="前年同日" style={{ textAlign: "right" }}>
+                        {yen(dailyLastYear[i])}
+                      </td>
+                      <td data-label="前年比" style={{ textAlign: "right" }}>
+                        <span className={`kpi-delta ${delta.dir === "down" ? "down" : "up"}`}>
+                          {delta.dir === "down" ? "▼" : "▲"} {delta.pct.toFixed(1)}%
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {dailyDateLabels.length === 0 && <div className="card-sub" style={{ padding: 20 }}>今月の記録はまだありません。</div>}
+          </div>
         </div>
 
         <div className="grid-2">

@@ -8,6 +8,8 @@ import Topbar from "../Topbar";
 import SalesFilters from "./SalesFilters";
 import NewSaleForm from "./NewSaleForm";
 import VisitsTable from "./VisitsTable";
+import NewExpenseForm from "./NewExpenseForm";
+import ExpensesTable from "./ExpensesTable";
 
 const ROLE_LABEL: Record<string, string> = { OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 const GENDER_LABEL: Record<string, string> = { male: "男性", female: "女性", other: "その他" };
@@ -56,7 +58,7 @@ export default async function SalesPage({
   const today = dayBounds(new Date(), 0);
   const lastYearToday = sameDayBounds(new Date(), -1);
 
-  const [visits, allStores, allStaff, allCustomers, todayVisits, lastYearTodayVisits, allMenuItems] = await Promise.all([
+  const [visits, allStores, allStaff, allCustomers, todayVisits, lastYearTodayVisits, allMenuItems, expenses] = await Promise.all([
     findVisits({ storeId, staffId: sp.staff || undefined, date: { gte: start, lt: end } }),
     prisma.store.findMany({ where: { kind: { not: "VINTAGE" } }, orderBy: { createdAt: "asc" } }),
     prisma.staff.findMany({
@@ -67,7 +69,12 @@ export default async function SalesPage({
     findVisits({ storeId, date: { gte: today.start, lt: today.end } }),
     findVisits({ storeId, date: { gte: lastYearToday.start, lt: lastYearToday.end } }),
     prisma.menuItem.findMany({ where: { storeId: storeId ?? undefined, active: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.expense.findMany({ where: { storeId: storeId ?? undefined, date: { gte: start, lt: end } }, orderBy: { date: "desc" } }),
   ]);
+
+  const todayExpenses = expenses.filter((e) => e.date >= today.start && e.date < today.end);
+  const todayExpenseTotal = todayExpenses.reduce((a, e) => a + e.amount, 0);
+  const totalExpenseAmount = expenses.reduce((a, e) => a + e.amount, 0);
 
   const couponMenus = allMenuItems.filter((m) => m.type === "service");
   const menuMenus = allMenuItems.filter((m) => m.type === "menu");
@@ -181,6 +188,49 @@ export default async function SalesPage({
 
         <div className="card" style={{ marginTop: 0 }}>
           <VisitsTable visits={visits} canEdit={true} />
+        </div>
+
+        <div style={{ marginTop: 24 }}>
+          <NewExpenseForm
+            isOwner={session.role === "OWNER"}
+            fixedStoreId={storeId}
+            stores={allStores.map((s) => ({ id: s.id, name: s.name }))}
+          />
+        </div>
+
+        <div className="card card-pad" style={{ marginBottom: 16 }}>
+          <div className="card-title">本日の経費</div>
+          <div className="card-sub">{scopeLabel}</div>
+
+          {todayExpenses.length === 0 ? (
+            <div className="card-sub">本日の登録はまだありません。</div>
+          ) : (
+            <div>
+              {todayExpenses.map((e) => (
+                <div className="list-row" key={e.id}>
+                  <div className="grow">
+                    <div className="title">{e.category}</div>
+                    <div className="meta">{e.memo || ""}</div>
+                  </div>
+                  <div className="amount">{yen(e.amount)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="card-sub" style={{ marginTop: 10 }}>
+            合計 <strong style={{ color: "var(--text)" }}>{yen(todayExpenseTotal)}</strong>（{todayExpenses.length}件）
+          </div>
+        </div>
+
+        <div className="filters">
+          <span className="card-sub" style={{ margin: 0 }}>
+            経費合計 <strong style={{ color: "var(--text)" }}>{yen(totalExpenseAmount)}</strong>（{expenses.length}件）
+          </span>
+        </div>
+
+        <div className="card" style={{ marginTop: 0 }}>
+          <ExpensesTable expenses={expenses} canEdit={true} />
         </div>
       </div>
     </>
