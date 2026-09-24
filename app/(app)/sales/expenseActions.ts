@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 import { jstDateWithTimeOf } from "@/lib/date";
 import { EXPENSE_CATEGORIES } from "@/lib/expenseCategories";
+import { sanitizeDigits } from "@/lib/format";
 
 function revalidateExpensePaths() {
   revalidatePath("/sales");
@@ -28,7 +29,7 @@ export async function createExpense(formData: FormData) {
   if (!parsed.success) return { ok: false as const, error: "入力内容をご確認ください。" };
   const data = parsed.data;
 
-  const amount = Number(data.amount);
+  const amount = Number(sanitizeDigits(data.amount));
   if (!Number.isInteger(amount) || amount <= 0) return { ok: false as const, error: "金額をご確認ください。" };
 
   // オーナー以外は自店舗にロック（クライアント側の値を信用しない）
@@ -73,7 +74,7 @@ export async function updateExpense(formData: FormData) {
   if (!parsed.success) return { ok: false as const, error: "入力内容をご確認ください。" };
   const data = parsed.data;
 
-  const amount = Number(data.amount);
+  const amount = Number(sanitizeDigits(data.amount));
   if (!Number.isInteger(amount) || amount <= 0) return { ok: false as const, error: "金額をご確認ください。" };
 
   const expense = await prisma.expense.findUnique({ where: { id: data.expenseId } });

@@ -5,6 +5,13 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 import { jstDateWithTimeOf } from "@/lib/date";
+import { sanitizeDigits } from "@/lib/format";
+
+// 全角数字・カンマ等が混ざっていても金額として読み取る（空欄はundefined）
+const amountOf = (s?: string) => {
+  const digits = sanitizeDigits(s ?? "");
+  return digits ? Number(digits) : undefined;
+};
 
 const schema = z.object({
   storeId: z.string().min(1),
@@ -37,7 +44,7 @@ export async function createVisit(formData: FormData) {
   const data = parsed.data;
 
   const productName = data.productName || undefined;
-  const productAmount = data.productAmount ? Number(data.productAmount) : undefined;
+  const productAmount = amountOf(data.productAmount);
   if (productName && !productAmount) return { ok: false as const, error: "店販の金額を入力してください。" };
   if (!productName && productAmount) return { ok: false as const, error: "店販の商品メニューを入力してください。" };
   if (productAmount !== undefined && (!Number.isInteger(productAmount) || productAmount <= 0)) {
@@ -46,7 +53,7 @@ export async function createVisit(formData: FormData) {
 
   // クーポンとメニューはそれぞれ任意だが、名前と金額はセットで入力する（技術売上＝両者の合計）
   const couponName = data.couponName || undefined;
-  const couponAmount = data.couponAmount ? Number(data.couponAmount) : undefined;
+  const couponAmount = amountOf(data.couponAmount);
   if (couponName && !couponAmount) return { ok: false as const, error: "クーポンの金額を入力してください。" };
   if (!couponName && couponAmount) return { ok: false as const, error: "クーポンのメニュー名を入力してください。" };
   if (couponAmount !== undefined && (!Number.isInteger(couponAmount) || couponAmount <= 0)) {
@@ -54,7 +61,7 @@ export async function createVisit(formData: FormData) {
   }
 
   const menuName = data.menuName || undefined;
-  const menuAmount = data.menuAmount ? Number(data.menuAmount) : undefined;
+  const menuAmount = amountOf(data.menuAmount);
   if (menuName && !menuAmount) return { ok: false as const, error: "メニューの金額を入力してください。" };
   if (!menuName && menuAmount) return { ok: false as const, error: "メニューの名前を入力してください。" };
   if (menuAmount !== undefined && (!Number.isInteger(menuAmount) || menuAmount <= 0)) {
@@ -62,8 +69,7 @@ export async function createVisit(formData: FormData) {
   }
 
   // 技術売上合計はフォームの自動計算値をそのまま使う（クーポン・メニューを使わず直接入力された場合もこれが正になる）
-  const amountRaw = data.amount ? Number(data.amount) : 0;
-  if (data.amount && !Number.isInteger(amountRaw)) return { ok: false as const, error: "技術売上合計の金額をご確認ください。" };
+  const amountRaw = amountOf(data.amount) ?? 0;
 
   const combinedMenuName = [couponName, menuName].filter(Boolean).join("／");
   const hasTechnical = combinedMenuName.length > 0 || amountRaw > 0;
@@ -78,7 +84,7 @@ export async function createVisit(formData: FormData) {
   }
   const amount = hasTechnical ? amountRaw : 0;
 
-  const pointAmount = data.pointAmount ? Number(data.pointAmount) : undefined;
+  const pointAmount = amountOf(data.pointAmount);
   if (pointAmount !== undefined && (!Number.isInteger(pointAmount) || pointAmount <= 0)) {
     return { ok: false as const, error: "ポイント売上の金額をご確認ください。" };
   }
@@ -154,21 +160,20 @@ export async function updateVisit(formData: FormData) {
   const data = parsed.data;
 
   const productName = data.productName || undefined;
-  const productAmount = data.productAmount ? Number(data.productAmount) : undefined;
+  const productAmount = amountOf(data.productAmount);
   if (productName && !productAmount) return { ok: false as const, error: "店販の金額を入力してください。" };
   if (!productName && productAmount) return { ok: false as const, error: "店販の商品メニューを入力してください。" };
   if (productAmount !== undefined && (!Number.isInteger(productAmount) || productAmount <= 0)) {
     return { ok: false as const, error: "店販の金額をご確認ください。" };
   }
 
-  const pointAmount = data.pointAmount ? Number(data.pointAmount) : undefined;
+  const pointAmount = amountOf(data.pointAmount);
   if (pointAmount !== undefined && (!Number.isInteger(pointAmount) || pointAmount <= 0)) {
     return { ok: false as const, error: "ポイント売上の金額をご確認ください。" };
   }
 
   const menuName = data.menuName || undefined;
-  const amountRaw = data.amount ? Number(data.amount) : 0;
-  if (data.amount && !Number.isInteger(amountRaw)) return { ok: false as const, error: "技術売上の金額をご確認ください。" };
+  const amountRaw = amountOf(data.amount) ?? 0;
   const hasTechnical = !!menuName || amountRaw > 0;
 
   // 施術（技術売上）と店販は、どちらか一方だけでも登録できる（店販だけで来店するお客様もいるため）

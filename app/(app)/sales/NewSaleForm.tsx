@@ -232,7 +232,7 @@ export default function NewSaleForm({
                   style={{ flex: 1 }}
                   onChange={(e) => {
                     const item = couponOptions.find((m) => m.name === e.target.value);
-                    if (item && couponAmountRef.current) {
+                    if (item && item.price > 0 && couponAmountRef.current) {
                       couponAmountRef.current.value = String(item.price);
                       updateTechnicalTotal();
                     }
@@ -285,7 +285,7 @@ export default function NewSaleForm({
                   style={{ flex: 1 }}
                   onChange={(e) => {
                     const item = menuOptions.find((m) => m.name === e.target.value);
-                    if (item && menuAmountRef.current) {
+                    if (item && item.price > 0 && menuAmountRef.current) {
                       menuAmountRef.current.value = String(item.price);
                       updateTechnicalTotal();
                     }
