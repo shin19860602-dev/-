@@ -60,6 +60,15 @@ export function VintageIcon() {
     </svg>
   );
 }
+export function CashIcon() {
+  return (
+    <svg className="nav-icon" viewBox="0 0 24 24" fill="none">
+      <rect x="2.5" y="6" width="19" height="12" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M5.5 9v0M18.5 15v0" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  );
+}
 export function AnalyticsIcon() {
   return (
     <svg className="nav-icon" viewBox="0 0 24 24" fill="none">

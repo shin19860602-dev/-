@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { DashboardIcon, SalesIcon, KarteIcon, SettingsIcon, AnalyticsIcon, PayrollIcon, VintageIcon } from "./NavIcons";
+import { DashboardIcon, SalesIcon, KarteIcon, SettingsIcon, AnalyticsIcon, PayrollIcon, VintageIcon, CashIcon } from "./NavIcons";
 
 const SALES = { href: "/sales", label: "売上", Icon: SalesIcon, ownerOnly: false, group: ["/sales"] };
 const KARTE = { href: "/karte", label: "カルテ", Icon: KarteIcon, ownerOnly: false, group: ["/karte"] };
@@ -23,11 +23,12 @@ const VINTAGE = {
   ownerOnly: false,
   group: ["/vintage", "/vintage/dashboard", "/vintage/settings"],
 };
+const CASH = { href: "/cash", label: "現金管理", Icon: CashIcon, ownerOnly: true, group: ["/cash"] };
 
 // スタッフ：現場での使用頻度順（売上入力が最優先、次にカルテ）
 const STAFF_ITEMS = [SALES, KARTE, ANALYTICS, DASHBOARD, SETTINGS];
 // オーナー：全店舗の状況を見るダッシュボードが最優先、カルテ登録は下の方でよい
-const OWNER_ITEMS = [DASHBOARD, SALES, ANALYTICS, KARTE, PAYROLL, SETTINGS, VINTAGE];
+const OWNER_ITEMS = [DASHBOARD, SALES, ANALYTICS, KARTE, PAYROLL, SETTINGS, VINTAGE, CASH];
 
 export default function NavLinks({ isOwner, showVintage }: { isOwner: boolean; showVintage: boolean }) {
   const pathname = usePathname();

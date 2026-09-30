@@ -46,6 +46,7 @@ model Store {
   vintageTags  VintageTag[]
   storeSavings StoreSavings[]
   expenses     Expense[]
+  cashCollections CashCollection[]
 }
 
 // スタッフ（オーナー／マネージャー／スタッフ）
@@ -75,6 +76,7 @@ model Staff {
   salaries          Salary[]
   vintageSales      VintageSale[]
   expenses          Expense[]
+  cashCollections   CashCollection[]
 }
 
 // お客様（カルテ台帳）
@@ -219,6 +221,24 @@ model Expense {
   category String // "仕入" | "消耗品" | "駐車場" | "その他"
   amount   Int // 金額（円）
   memo     String?
+
+  createdAt DateTime @default(now())
+}
+
+// 現金回収ログ。シェルバレー・リアンなど他店舗の現金売上を、実際に現金を持ってきた
+// タイミングでオーナーが手入力する（システム上のデータからは自動判定できないため）。
+// storeIdは回収「元」の店舗（現金の集約先はチュラ：re固定）。
+model CashCollection {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  staffId String
+  staff   Staff  @relation(fields: [staffId], references: [id])
+
+  date   DateTime
+  amount Int // 金額（円）
+  memo   String?
 
   createdAt DateTime @default(now())
 }
