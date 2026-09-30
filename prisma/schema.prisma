@@ -77,6 +77,7 @@ model Staff {
   vintageSales      VintageSale[]
   expenses          Expense[]
   cashCollections   CashCollection[]
+  bankDeposits      BankDeposit[]
 }
 
 // お客様（カルテ台帳）
@@ -232,6 +233,21 @@ model CashCollection {
   id      String @id @default(cuid())
   storeId String
   store   Store  @relation(fields: [storeId], references: [id])
+
+  staffId String
+  staff   Staff  @relation(fields: [staffId], references: [id])
+
+  date   DateTime
+  amount Int // 金額（円）
+  memo   String?
+
+  createdAt DateTime @default(now())
+}
+
+// 銀行への入金ログ。チュラ：reに集まった現金を実際に銀行へ入金したタイミングで
+// オーナーが手入力する（現金残高からその分を差し引く）。
+model BankDeposit {
+  id String @id @default(cuid())
 
   staffId String
   staff   Staff  @relation(fields: [staffId], references: [id])
