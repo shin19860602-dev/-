@@ -101,11 +101,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     findVisits({ storeId, date: { gte: summaryCompareMonth.start, lt: summaryCompareMonth.end } }),
   ]);
 
-  const thisMonthExpenses = await prisma.expense.findMany({
-    where: { storeId: storeId ?? undefined, date: { gte: thisMonth.start, lt: thisMonth.end } },
+  const selectedMonthExpenses = await prisma.expense.findMany({
+    where: { storeId: storeId ?? undefined, date: { gte: summaryMonth.start, lt: summaryMonth.end } },
     select: { date: true, amount: true, category: true },
   });
-  const thisMonthExpenseTotal = thisMonthExpenses.reduce((a, e) => a + e.amount, 0);
+  const selectedMonthExpenseTotal = selectedMonthExpenses.reduce((a, e) => a + e.amount, 0);
 
   const monthSummary = summarizeVisits(summaryMonthVisits);
   const monthCompareSummary = summarizeVisits(summaryCompareVisits);
@@ -180,8 +180,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     return lastYearTrendRows.filter((r) => r.date >= b.start && r.date < b.end).reduce((a, r) => a + (r.productAmount ?? 0), 0);
   });
 
-  // 日次売上推移（今月・曜日つき・前年同日比較）
+  // 日次売上推移（選択した月・曜日つき・前年同日比較）
   const WEEKDAY_JA = ["日", "月", "火", "水", "木", "金", "土"];
+  const daysInSelectedMonth = Math.round((summaryMonth.end.getTime() - summaryMonth.start.getTime()) / 86400000);
   const dailyLabels: string[] = [];
   const dailyDateLabels: string[] = [];
   const dailyWeekday: string[] = [];
@@ -199,14 +200,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const dailyExpenseHPB: number[] = [];
   const dailyExpenseUtilities: number[] = [];
   const dailyExpenseOther: number[] = [];
-  for (let d = 1; d <= nowJst.date; d++) {
-    const dayStart = jstDate(nowJst.year, nowJst.month, d);
-    const dayEnd = jstDate(nowJst.year, nowJst.month, d + 1);
+  for (let d = 1; d <= daysInSelectedMonth; d++) {
+    const dayStart = jstDate(selYear, selMonth - 1, d);
+    const dayEnd = jstDate(selYear, selMonth - 1, d + 1);
     const weekday = WEEKDAY_JA[jstParts(dayStart).day];
     dailyLabels.push(`${d}(${weekday})`);
-    dailyDateLabels.push(`${nowJst.month + 1}/${d}`);
+    dailyDateLabels.push(`${selMonth}/${d}`);
     dailyWeekday.push(weekday);
-    const dayVisits = trendRows.filter((r) => r.date >= dayStart && r.date < dayEnd);
+    const dayVisits = summaryMonthVisits.filter((r) => r.date >= dayStart && r.date < dayEnd);
     dailyThisYear.push(dayVisits.reduce((a, r) => a + visitTotal(r), 0));
     dailyTechCash.push(dayVisits.filter((r) => r.paymentMethod === "cash").reduce((a, r) => a + r.amount, 0));
     dailyTechCredit.push(dayVisits.filter((r) => r.paymentMethod === "credit").reduce((a, r) => a + r.amount, 0));
@@ -214,7 +215,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     dailyProductCash.push(dayVisits.filter((r) => r.paymentMethod === "cash").reduce((a, r) => a + (r.productAmount ?? 0), 0));
     dailyProductCredit.push(dayVisits.filter((r) => r.paymentMethod === "credit").reduce((a, r) => a + (r.productAmount ?? 0), 0));
 
-    const dayExpenses = thisMonthExpenses.filter((e) => e.date >= dayStart && e.date < dayEnd);
+    const dayExpenses = selectedMonthExpenses.filter((e) => e.date >= dayStart && e.date < dayEnd);
     dailyExpense.push(dayExpenses.reduce((a, e) => a + e.amount, 0));
     dailyExpensePurchase.push(dayExpenses.filter((e) => e.category === "仕入").reduce((a, e) => a + e.amount, 0));
     dailyExpenseSupplies.push(dayExpenses.filter((e) => e.category === "消耗品").reduce((a, e) => a + e.amount, 0));
@@ -223,10 +224,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     dailyExpenseUtilities.push(dayExpenses.filter((e) => e.category === "光熱費").reduce((a, e) => a + e.amount, 0));
     dailyExpenseOther.push(dayExpenses.filter((e) => e.category === "その他").reduce((a, e) => a + e.amount, 0));
 
-    const lastYearDayStart = jstDate(nowJst.year - 1, nowJst.month, d);
-    const lastYearDayEnd = jstDate(nowJst.year - 1, nowJst.month, d + 1);
+    const lastYearDayStart = jstDate(selYear - 1, selMonth - 1, d);
+    const lastYearDayEnd = jstDate(selYear - 1, selMonth - 1, d + 1);
     dailyLastYear.push(
-      lastYearTrendRows.filter((r) => r.date >= lastYearDayStart && r.date < lastYearDayEnd).reduce((a, r) => a + visitTotal(r), 0)
+      summaryCompareVisits.filter((r) => r.date >= lastYearDayStart && r.date < lastYearDayEnd).reduce((a, r) => a + visitTotal(r), 0)
     );
   }
 
@@ -305,15 +306,27 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         )}
 
         <div className="card card-pad" style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+            <div>
+              <div className="card-title">表示する月</div>
+              <div className="card-sub" style={{ margin: 0 }}>
+                下の日次グラフ・日別売上一覧・月次まとめに反映されます
+              </div>
+            </div>
+            <MonthSelect options={monthOptions} current={selectedMonthValue} />
+          </div>
+        </div>
+
+        <div className="card card-pad" style={{ marginBottom: 16 }}>
           <div className="card-title">日次売上推移（前年比較）</div>
           <div className="card-sub">
-            {scopeLabel}・{nowJst.year}年{nowJst.month + 1}月（曜日つき・去年の同日と比較）
+            {scopeLabel}・{selYear}年{selMonth}月（曜日つき・去年の同日と比較）
           </div>
           <LineChart
             categories={dailyLabels}
             series={[
-              { key: "this", label: `${nowJst.year}年`, color: "var(--accent)", values: dailyThisYear.map((v) => v / 10000) },
-              { key: "last", label: `${nowJst.year - 1}年`, color: "var(--text-faint)", values: dailyLastYear.map((v) => v / 10000) },
+              { key: "this", label: `${selYear}年`, color: "var(--accent)", values: dailyThisYear.map((v) => v / 10000) },
+              { key: "last", label: `${selYear - 1}年`, color: "var(--text-faint)", values: dailyLastYear.map((v) => v / 10000) },
             ]}
             unit="万円"
             valueFormatter={(v) => v.toFixed(0)}
@@ -323,7 +336,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <div className="card card-pad" style={{ marginBottom: 16 }}>
           <div className="card-title">日別売上一覧</div>
           <div className="card-sub">
-            {scopeLabel}・{nowJst.year}年{nowJst.month + 1}月・経費合計 {yen(thisMonthExpenseTotal)}
+            {scopeLabel}・{selYear}年{selMonth}月・経費合計 {yen(selectedMonthExpenseTotal)}
           </div>
           <div className="table-wrap table-scroll">
             <table>
@@ -402,15 +415,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     <td data-label="HPB" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyExpenseHPB.reduce((a, v) => a + v, 0))}</td>
                     <td data-label="光熱費" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyExpenseUtilities.reduce((a, v) => a + v, 0))}</td>
                     <td data-label="その他" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyExpenseOther.reduce((a, v) => a + v, 0))}</td>
-                    <td data-label="経費・小計" style={{ textAlign: "right", fontWeight: 700 }}>{yen(thisMonthExpenseTotal)}</td>
+                    <td data-label="経費・小計" style={{ textAlign: "right", fontWeight: 700 }}>{yen(selectedMonthExpenseTotal)}</td>
                     <td data-label="差引" style={{ textAlign: "right", fontWeight: 700 }}>
-                      {yen(dailyThisYear.reduce((a, v) => a + v, 0) - thisMonthExpenseTotal)}
+                      {yen(dailyThisYear.reduce((a, v) => a + v, 0) - selectedMonthExpenseTotal)}
                     </td>
                   </tr>
                 </tfoot>
               )}
             </table>
-            {dailyDateLabels.length === 0 && <div className="card-sub" style={{ padding: 20 }}>今月の記録はまだありません。</div>}
+            {dailyDateLabels.length === 0 && <div className="card-sub" style={{ padding: 20 }}>この月の記録はまだありません。</div>}
           </div>
         </div>
 
