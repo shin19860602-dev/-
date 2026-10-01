@@ -8,6 +8,8 @@ import NewCollectionForm from "./NewCollectionForm";
 import CollectionsTable from "./CollectionsTable";
 import NewBankDepositForm from "./NewBankDepositForm";
 import BankDepositsTable from "./BankDepositsTable";
+import NewAdjustmentForm from "./NewAdjustmentForm";
+import AdjustmentsTable from "./AdjustmentsTable";
 
 const ROLE_LABEL: Record<string, string> = { OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 const BASE_STORE_SLUG = "chura-re";
@@ -33,7 +35,7 @@ export default async function CashPage() {
     );
   }
 
-  const [stores, cashVisitRows, expenseRows, collections, deposits] = await Promise.all([
+  const [stores, cashVisitRows, expenseRows, collections, deposits, adjustments] = await Promise.all([
     prisma.store.findMany({ where: { kind: { not: "VINTAGE" } }, orderBy: { createdAt: "asc" } }),
     prisma.visit.findMany({
       where: { paymentMethod: "cash", date: { gte: START_DATE } },
@@ -42,6 +44,7 @@ export default async function CashPage() {
     prisma.expense.findMany({ where: { date: { gte: START_DATE } }, select: { storeId: true, amount: true, date: true } }),
     prisma.cashCollection.findMany({ where: { date: { gte: START_DATE } }, include: { store: true }, orderBy: { date: "desc" } }),
     prisma.bankDeposit.findMany({ where: { date: { gte: START_DATE } }, orderBy: { date: "desc" } }),
+    prisma.cashAdjustment.findMany({ where: { date: { gte: START_DATE } }, orderBy: { date: "desc" } }),
   ]);
 
   const baseStore = stores.find((s) => s.slug === BASE_STORE_SLUG);
@@ -62,7 +65,8 @@ export default async function CashPage() {
   const baseExpenseTotal = baseExpenseRows.reduce((a, e) => a + e.amount, 0);
   const collectedTotal = collections.reduce((a, c) => a + c.amount, 0);
   const depositedTotal = deposits.reduce((a, d) => a + d.amount, 0);
-  const cashBalance = baseCashSalesTotal - baseExpenseTotal + collectedTotal - depositedTotal;
+  const adjustmentTotal = adjustments.reduce((a, x) => a + x.delta, 0);
+  const cashBalance = baseCashSalesTotal - baseExpenseTotal + collectedTotal - depositedTotal + adjustmentTotal;
 
   // 月次繰越表（2026年10月〜今月）：前月末の残高を翌月の「前月繰越」として引き継ぐ
   const now = new Date();
@@ -75,6 +79,7 @@ export default async function CashPage() {
     expense: number;
     collected: number;
     deposited: number;
+    adjusted: number;
     closing: number;
   }[] = [];
   {
@@ -90,8 +95,9 @@ export default async function CashPage() {
       const monthExpense = baseExpenseRows.filter((e) => e.date >= mStart && e.date < mEnd).reduce((a, e) => a + e.amount, 0);
       const monthCollected = collections.filter((c) => c.date >= mStart && c.date < mEnd).reduce((a, c) => a + c.amount, 0);
       const monthDeposited = deposits.filter((d) => d.date >= mStart && d.date < mEnd).reduce((a, d) => a + d.amount, 0);
+      const monthAdjusted = adjustments.filter((x) => x.date >= mStart && x.date < mEnd).reduce((a, x) => a + x.delta, 0);
       const opening = carry;
-      const closing = opening + monthCashSales - monthExpense + monthCollected - monthDeposited;
+      const closing = opening + monthCashSales - monthExpense + monthCollected - monthDeposited + monthAdjusted;
       monthRows.push({
         label: `${y}年${m + 1}月`,
         opening,
@@ -99,6 +105,7 @@ export default async function CashPage() {
         expense: monthExpense,
         collected: monthCollected,
         deposited: monthDeposited,
+        adjusted: monthAdjusted,
         closing,
       });
       carry = closing;
@@ -114,6 +121,7 @@ export default async function CashPage() {
     expense: monthRows.reduce((a, r) => a + r.expense, 0),
     collected: monthRows.reduce((a, r) => a + r.collected, 0),
     deposited: monthRows.reduce((a, r) => a + r.deposited, 0),
+    adjusted: monthRows.reduce((a, r) => a + r.adjusted, 0),
     closing: monthRows.length > 0 ? monthRows[monthRows.length - 1].closing : 0,
   };
   const currentMonthRow = monthRows.length > 0 ? monthRows[monthRows.length - 1] : null;
@@ -151,6 +159,13 @@ export default async function CashPage() {
               <div className="field">
                 <div className="field-label">今月の銀行入金</div>
                 <div className="field-value">－{yen(currentMonthRow?.deposited ?? 0)}</div>
+              </div>
+              <div className="field">
+                <div className="field-label">今月の残高調整</div>
+                <div className="field-value">
+                  {(currentMonthRow?.adjusted ?? 0) > 0 ? "＋" : ""}
+                  {yen(currentMonthRow?.adjusted ?? 0)}
+                </div>
               </div>
             </div>
           </div>
@@ -201,6 +216,7 @@ export default async function CashPage() {
                   <th style={{ textAlign: "right" }}>経費</th>
                   <th style={{ textAlign: "right" }}>回収</th>
                   <th style={{ textAlign: "right" }}>銀行入金</th>
+                  <th style={{ textAlign: "right" }}>残高調整</th>
                   <th style={{ textAlign: "right" }}>月末残高</th>
                 </tr>
               </thead>
@@ -213,6 +229,10 @@ export default async function CashPage() {
                     <td data-label="経費" style={{ textAlign: "right" }}>{yen(r.expense)}</td>
                     <td data-label="回収" style={{ textAlign: "right" }}>{yen(r.collected)}</td>
                     <td data-label="銀行入金" style={{ textAlign: "right" }}>{yen(r.deposited)}</td>
+                    <td data-label="残高調整" style={{ textAlign: "right" }}>
+                      {r.adjusted > 0 ? "＋" : ""}
+                      {yen(r.adjusted)}
+                    </td>
                     <td data-label="月末残高" style={{ textAlign: "right", fontWeight: 700 }}>{yen(r.closing)}</td>
                   </tr>
                 ))}
@@ -226,6 +246,10 @@ export default async function CashPage() {
                     <td data-label="経費" style={{ textAlign: "right", fontWeight: 700 }}>{yen(yearTotal.expense)}</td>
                     <td data-label="回収" style={{ textAlign: "right", fontWeight: 700 }}>{yen(yearTotal.collected)}</td>
                     <td data-label="銀行入金" style={{ textAlign: "right", fontWeight: 700 }}>{yen(yearTotal.deposited)}</td>
+                    <td data-label="残高調整" style={{ textAlign: "right", fontWeight: 700 }}>
+                      {yearTotal.adjusted > 0 ? "＋" : ""}
+                      {yen(yearTotal.adjusted)}
+                    </td>
                     <td data-label="月末残高" style={{ textAlign: "right", fontWeight: 700 }}>{yen(yearTotal.closing)}</td>
                   </tr>
                 </tfoot>
@@ -250,12 +274,22 @@ export default async function CashPage() {
 
         <NewBankDepositForm />
 
-        <div className="card">
+        <div className="card" style={{ marginBottom: 16 }}>
           <div className="card-pad" style={{ paddingBottom: 0 }}>
             <div className="card-title">入金履歴</div>
             <div className="card-sub">チュラ：reの現金を銀行へ入金した記録</div>
           </div>
           <BankDepositsTable deposits={deposits} />
+        </div>
+
+        <NewAdjustmentForm currentBalance={cashBalance} />
+
+        <div className="card">
+          <div className="card-pad" style={{ paddingBottom: 0 }}>
+            <div className="card-title">残高調整の履歴</div>
+            <div className="card-sub">実際に数えた現金残高を入力した記録</div>
+          </div>
+          <AdjustmentsTable adjustments={adjustments} />
         </div>
       </div>
     </>

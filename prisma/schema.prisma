@@ -78,6 +78,7 @@ model Staff {
   expenses          Expense[]
   cashCollections   CashCollection[]
   bankDeposits      BankDeposit[]
+  cashAdjustments   CashAdjustment[]
 }
 
 // お客様（カルテ台帳）
@@ -255,6 +256,22 @@ model BankDeposit {
   date   DateTime
   amount Int // 金額（円）
   memo   String?
+
+  createdAt DateTime @default(now())
+}
+
+// 現金残高の調整ログ。実際に数えた現金残高を入力すると、その時点の計算上の
+// 残高との差額（delta）を記録し、以後の残高計算に反映する（棚卸しのズレ補正）。
+model CashAdjustment {
+  id String @id @default(cuid())
+
+  staffId String
+  staff   Staff  @relation(fields: [staffId], references: [id])
+
+  date           DateTime
+  enteredBalance Int // 実際に数えた現金残高（円）
+  delta          Int // 入力時点の計算上の残高との差額（円・マイナスもあり得る）
+  memo           String?
 
   createdAt DateTime @default(now())
 }
