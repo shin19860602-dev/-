@@ -234,8 +234,8 @@ export default function NewSaleForm({
                   style={{ flex: 1 }}
                   onChange={(e) => {
                     const item = couponOptions.find((m) => m.name === e.target.value);
-                    if (item && item.price > 0 && couponAmountRef.current) {
-                      couponAmountRef.current.value = String(item.price);
+                    if (couponAmountRef.current) {
+                      couponAmountRef.current.value = item && item.price > 0 ? String(item.price) : "";
                       updateTechnicalTotal();
                     }
                   }}
@@ -287,8 +287,8 @@ export default function NewSaleForm({
                   style={{ flex: 1 }}
                   onChange={(e) => {
                     const item = menuOptions.find((m) => m.name === e.target.value);
-                    if (item && item.price > 0 && menuAmountRef.current) {
-                      menuAmountRef.current.value = String(item.price);
+                    if (menuAmountRef.current) {
+                      menuAmountRef.current.value = item && item.price > 0 ? String(item.price) : "";
                       updateTechnicalTotal();
                     }
                   }}
@@ -389,7 +389,7 @@ export default function NewSaleForm({
                 defaultValue=""
                 onChange={(e) => {
                   const item = productOptions.find((m) => m.name === e.target.value);
-                  if (item && productAmountRef.current) productAmountRef.current.value = String(item.price);
+                  if (productAmountRef.current) productAmountRef.current.value = item ? String(item.price) : "";
                 }}
               >
                 <option value="">選択しない</option>
