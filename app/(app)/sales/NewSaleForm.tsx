@@ -37,6 +37,7 @@ export default function NewSaleForm({
   const couponAmountRef = useRef<HTMLInputElement>(null);
   const menuAmountRef = useRef<HTMLInputElement>(null);
   const productAmountRef = useRef<HTMLInputElement>(null);
+  const pointAmountRef = useRef<HTMLInputElement>(null);
   const kanaRef = useRef<HTMLInputElement>(null);
   const amountTouchedRef = useRef(false);
   const kanaTouchedRef = useRef(false);
@@ -64,12 +65,13 @@ export default function NewSaleForm({
   const menuOptions = useMemo(() => menuMenus.filter((m) => m.storeId === storeId), [menuMenus, storeId]);
   const productOptions = useMemo(() => productMenus.filter((m) => m.storeId === storeId), [productMenus, storeId]);
 
-  // 技術売上合計＝クーポン金額＋メニュー金額の合計を自動提案する（手入力したら以後は上書きしない）
+  // 技術売上合計＝クーポン金額＋メニュー金額－ポイント分を自動提案する（手入力したら以後は上書きしない）
   function updateTechnicalTotal() {
     if (amountTouchedRef.current || !amountRef.current) return;
     const coupon = Number(couponAmountRef.current?.value || "0") || 0;
     const menu = Number(menuAmountRef.current?.value || "0") || 0;
-    amountRef.current.value = String(coupon + menu);
+    const point = Number(pointAmountRef.current?.value || "0") || 0;
+    amountRef.current.value = String(Math.max(coupon + menu - point, 0));
   }
 
   return (
@@ -350,14 +352,18 @@ export default function NewSaleForm({
             />
           </div>
           <div>
-            <label className="form-label">ポイント売上（円・任意）</label>
+            <label className="form-label">ポイント売上（円・任意・技術売上合計から自動で差し引かれます）</label>
             <input
+              ref={pointAmountRef}
               className="field-input"
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
               name="pointAmount"
-              onChange={sanitizeAmountInput}
+              onChange={(e) => {
+                sanitizeAmountInput(e);
+                updateTechnicalTotal();
+              }}
             />
           </div>
 
