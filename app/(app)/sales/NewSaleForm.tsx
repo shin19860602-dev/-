@@ -217,7 +217,11 @@ export default function NewSaleForm({
               クーポン（任意）
               <button
                 type="button"
-                onClick={() => setCouponCustom((v) => !v)}
+                onClick={() => {
+                  setCouponCustom((v) => !v);
+                  if (couponAmountRef.current) couponAmountRef.current.value = "";
+                  updateTechnicalTotal();
+                }}
                 style={{ marginLeft: 8, fontSize: 11, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
               >
                 {couponCustom ? "一覧から選ぶ" : "自由入力に切替"}
@@ -270,7 +274,11 @@ export default function NewSaleForm({
               メニュー（任意）
               <button
                 type="button"
-                onClick={() => setMenuCustom((v) => !v)}
+                onClick={() => {
+                  setMenuCustom((v) => !v);
+                  if (menuAmountRef.current) menuAmountRef.current.value = "";
+                  updateTechnicalTotal();
+                }}
                 style={{ marginLeft: 8, fontSize: 11, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
               >
                 {menuCustom ? "一覧から選ぶ" : "自由入力に切替"}
