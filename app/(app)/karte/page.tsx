@@ -54,6 +54,12 @@ export default async function KartePage({
     prisma.staff.findMany({ where: { storeId: storeId ?? undefined, active: true, role: { not: "OWNER" } }, orderBy: { name: "asc" } }),
   ]);
 
+  const mergeCandidates = selected?.active ? await prisma.customer.findMany({
+    where: { storeId: selected.storeId, active: true, id: { not: selected.id } },
+    select: { id: true, name: true, kana: true, phone: true, birthday: true, _count: { select: { visits: true } } },
+    orderBy: { name: "asc" },
+  }) : [];
+
   const qsBase = new URLSearchParams();
   if (sp.store) qsBase.set("store", sp.store);
   for (const key of ["q", "gender", "category", "from", "to"] as const) {
@@ -105,7 +111,7 @@ export default async function KartePage({
           </div>
 
           {selected ? (
-            <CustomerDetailPanel key={selected.id} customer={selected} staffOptions={staffOptionsForEdit} />
+            <CustomerDetailPanel key={selected.id} customer={selected} staffOptions={staffOptionsForEdit} mergeCandidates={mergeCandidates.map((c) => ({ ...c, visits: c._count.visits }))} />
           ) : (
             <div className="card card-pad">
               <div className="card-sub">{sp.customer ? "指定されたカルテが見つからないか、閲覧権限がありません。" : "お客様を選択、または新規登録してください。"}</div>

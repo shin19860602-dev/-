@@ -92,8 +92,8 @@ export async function createVisit(formData: FormData) {
   }
   if (!customerId) return { ok: false as const, error: "お客様を選択するか、新規のお客様名を入力してください。" };
 
-  const customer = await prisma.customer.findFirst({ where: { id: customerId, storeId } });
-  if (!customer) return { ok: false as const, error: "お客様が選択した店舗と一致しません。" };
+  const customer = await prisma.customer.findFirst({ where: { id: customerId, storeId, active: true } });
+  if (!customer) return { ok: false as const, error: "お客様が選択した店舗と一致しないか、統合・非表示になっています。お客様を選び直してください。" };
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date)) return { ok: false as const, error: "日付をご確認ください。" };
   const date = jstDateWithTimeOf(data.date, new Date());

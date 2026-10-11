@@ -2,10 +2,6 @@
 
 import { useMemo, useRef, useState } from "react";
 
-// IME変換前（ひらがな入力中）の文字列だけを拾う。Safari等はcompositionupdateまで
-// input/changeイベントを発火しないため、確定・変換を待たず1文字目から絞り込めるようにする。
-const HIRAGANA_RE = /^[ぁ-ゖー]+$/;
-
 type Customer = { id: string; name: string; kana: string | null };
 
 export default function CustomerCombobox({
@@ -17,6 +13,7 @@ export default function CustomerCombobox({
   name: string;
   placeholder?: string;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState("");
   const [open, setOpen] = useState(false);
@@ -30,6 +27,7 @@ export default function CustomerCombobox({
 
   const select = (c: Customer) => {
     setSelectedId(c.id);
+    if (inputRef.current) inputRef.current.value = `${c.name} 様`;
     setQuery(`${c.name} 様`);
     setOpen(false);
   };
@@ -40,19 +38,18 @@ export default function CustomerCombobox({
       <input
         className="field-input"
         placeholder={placeholder ?? "お名前で検索"}
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
+        // 入力欄はブラウザに管理させ、IME変換中にReactから文字列を書き戻さない。
+        ref={inputRef}
+        defaultValue=""
+        onInput={(e) => {
+          setQuery(e.currentTarget.value);
           setSelectedId("");
           setOpen(true);
         }}
-        onCompositionUpdate={(e) => {
-          const data = e.data ?? "";
-          if (HIRAGANA_RE.test(data)) {
-            setQuery(data);
-            setSelectedId("");
-            setOpen(true);
-          }
+        onCompositionEnd={(e) => {
+          setQuery(e.currentTarget.value);
+          setSelectedId("");
+          setOpen(true);
         }}
         onFocus={() => setOpen(true)}
         onBlur={() => {

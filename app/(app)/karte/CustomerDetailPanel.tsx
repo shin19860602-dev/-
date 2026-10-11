@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { yen, visitTotal } from "@/lib/analytics";
 import { givenNameInitial as initial } from "@/lib/format";
+import MergeCustomerForm, { type MergeCandidate } from "./MergeCustomerForm";
 import EditCustomerForm from "./EditCustomerForm";
 
 const GENDER_LABEL: Record<string, string> = { male: "男性", female: "女性", other: "その他" };
@@ -32,6 +33,7 @@ type Visit = {
 };
 type Customer = {
   id: string;
+  active: boolean;
   storeId: string;
   name: string;
   kana: string | null;
@@ -45,11 +47,11 @@ type Customer = {
   allergyNote: string | null;
   primaryStaffId: string | null;
   primaryStaff: { name: string } | null;
-  store: { name: string; colorKey: string };
+  store: { slug: string; name: string; colorKey: string };
   visits: Visit[];
 };
 
-export default function CustomerDetailPanel({ customer, staffOptions }: { customer: Customer; staffOptions: Staff[] }) {
+export default function CustomerDetailPanel({ customer, staffOptions, mergeCandidates }: { customer: Customer; staffOptions: Staff[]; mergeCandidates: MergeCandidate[] }) {
   const [editing, setEditing] = useState(false);
   const totalSpend = customer.visits.reduce((a, v) => a + visitTotal(v), 0);
 
@@ -125,6 +127,12 @@ export default function CustomerDetailPanel({ customer, staffOptions }: { custom
           </div>
         </div>
       )}
+
+      {customer.active && <MergeCustomerForm
+        target={{ id: customer.id, name: customer.name, kana: customer.kana, phone: customer.phone, birthday: customer.birthday, visits: customer.visits.length }}
+        candidates={mergeCandidates}
+        storeSlug={customer.store.slug}
+      />}
 
       <div className="card-title" style={{ marginBottom: 10 }}>
         施術履歴

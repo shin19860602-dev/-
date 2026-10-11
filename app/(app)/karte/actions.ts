@@ -4,6 +4,8 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
+import { Prisma } from "@prisma/client";
+import { mergedCustomerData } from "@/lib/mergeCustomer";
 
 const schema = z.object({
   storeId: z.string().min(1),
@@ -117,4 +119,37 @@ export async function deleteCustomer(customerId: string) {
   revalidatePath("/karte");
   revalidatePath("/sales");
   return { ok: true as const, hidden: visitCount > 0 };
+}
+
+export async function mergeCustomers(targetId: string, sourceId: string) {
+  const session = await requireSession();
+  if (!session) return { ok: false as const, error: "ログインが必要です。" };
+  if (!targetId || !sourceId || targetId === sourceId) return { ok: false as const, error: "異なる2つのカルテを選択してください。" };
+  const storeId = session.role === "OWNER" ? undefined : session.storeId!;
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const [target, source] = await Promise.all([
+        tx.customer.findFirst({ where: { id: targetId, storeId, active: true } }),
+        tx.customer.findFirst({ where: { id: sourceId, storeId, active: true } }),
+      ]);
+      if (!target || !source) return { ok: false as const, error: "カルテが見つからないか、すでに統合・非表示になっています。" };
+      if (target.storeId !== source.storeId) return { ok: false as const, error: "同じ店舗のカルテ同士のみ統合できます。" };
+
+      await tx.visit.updateMany({ where: { customerId: source.id }, data: { customerId: target.id } });
+      await tx.customer.update({ where: { id: target.id }, data: mergedCustomerData(target, source) });
+      await tx.customer.update({ where: { id: source.id }, data: { active: false } });
+      return { ok: true as const, customerId: target.id };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+    if (result.ok) {
+      for (const path of ["/karte", "/sales", "/dashboard", "/analytics"]) revalidatePath(path);
+    }
+    return result;
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
+      return { ok: false as const, error: "同時に更新がありました。画面を再読み込みして、もう一度お試しください。" };
+    }
+    return { ok: false as const, error: "統合できませんでした。カルテを再確認して、もう一度お試しください。" };
+  }
 }
