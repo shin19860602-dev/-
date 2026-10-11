@@ -4,6 +4,7 @@ import { useState } from "react";
 import { yen, visitTotal } from "@/lib/analytics";
 import { givenNameInitial as initial } from "@/lib/format";
 import MergeCustomerForm, { type MergeCandidate } from "./MergeCustomerForm";
+import VisitEditForm from "../sales/VisitEditForm";
 import EditCustomerForm from "./EditCustomerForm";
 
 const GENDER_LABEL: Record<string, string> = { male: "男性", female: "女性", other: "その他" };
@@ -24,6 +25,8 @@ type Visit = {
   date: Date;
   menuName: string;
   amount: number;
+  category: string | null;
+  paymentMethod: string | null;
   productName: string | null;
   productAmount: number | null;
   pointAmount: number | null;
@@ -47,11 +50,12 @@ type Customer = {
   allergyNote: string | null;
   primaryStaffId: string | null;
   primaryStaff: { name: string } | null;
-  store: { slug: string; name: string; colorKey: string };
+  store: { slug: string; name: string; colorKey: string; kind: string };
   visits: Visit[];
 };
 
 export default function CustomerDetailPanel({ customer, staffOptions, mergeCandidates }: { customer: Customer; staffOptions: Staff[]; mergeCandidates: MergeCandidate[] }) {
+  const [editingVisitId, setEditingVisitId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const totalSpend = customer.visits.reduce((a, v) => a + visitTotal(v), 0);
 
@@ -149,6 +153,15 @@ export default function CustomerDetailPanel({ customer, staffOptions, mergeCandi
                   {v.pointAmount ? `＋ポイント${yen(v.pointAmount)}` : ""}
                 </div>
                 <div className="tl-amount">{yen(visitTotal(v))}</div>
+              </div>
+              <div style={{ marginTop: 8 }}>
+                {editingVisitId === v.id ? (
+                  <VisitEditForm key={v.id} visit={v} storeKind={customer.store.kind} onDone={() => setEditingVisitId(null)} />
+                ) : (
+                  <button type="button" className="btn-ghost" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => setEditingVisitId(v.id)}>
+                    売上を編集
+                  </button>
+                )}
               </div>
               <div className="tl-detail">
                 担当：{v.staff.name}
