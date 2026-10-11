@@ -34,7 +34,11 @@ export function buildKarteWhere(filters: KarteFilters, storeId?: string): { wher
 
   if (filters.category || from || to) {
     const visit: Prisma.VisitWhereInput = { storeId };
-    if (filters.category) visit.category = filters.category;
+    if (filters.category === "uncategorized") {
+      visit.OR = [{ category: null }, { category: "" }];
+    } else if (filters.category) {
+      visit.category = filters.category;
+    }
     if (from || to) {
       const end = to ? jstParts(to) : undefined;
       visit.date = { gte: from, lt: end ? jstDate(end.year, end.month, end.date + 1) : undefined };

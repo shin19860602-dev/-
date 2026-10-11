@@ -72,6 +72,7 @@ export default function KarteSearch({ categories }: { categories: string[] }) {
       <label className="form-label">施術カテゴリ
         <select className="field-input" name="category" defaultValue={searchParams.get("category") ?? ""}>
           <option value="">すべて</option>
+          <option value="uncategorized">未分類</option>
           {categories.map((category) => <option key={category} value={category}>{category}</option>)}
         </select>
       </label>

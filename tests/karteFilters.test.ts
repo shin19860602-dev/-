@@ -33,3 +33,15 @@ test("未登録性別・名前の部分一致・条件なしで未来店客も�
   });
   assert.equal(buildKarteWhere({}, "store-a").where.visits, undefined);
 });
+
+
+test("未分類はカテゴリ未登録と空文字の来店を、指定店舗・期間で検索する", () => {
+  const { where, error } = buildKarteWhere({ category: "uncategorized", gender: "male", from: "2026-10-11", to: "2026-10-11" }, "store-a");
+  assert.equal(error, undefined);
+  assert.equal(where.gender, "male");
+  assert.deepEqual(where.visits?.some, {
+    storeId: "store-a",
+    OR: [{ category: null }, { category: "" }],
+    date: { gte: new Date("2026-10-10T15:00:00Z"), lt: new Date("2026-10-11T15:00:00Z") },
+  });
+});
