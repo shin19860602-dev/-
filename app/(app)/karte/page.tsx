@@ -4,6 +4,8 @@ import { resolveStoreScope } from "@/lib/scope";
 import { prisma } from "@/lib/prisma";
 import { givenNameInitial as initial } from "@/lib/format";
 import { jstParts } from "@/lib/date";
+import { categoriesForStoreKind, SALON_CATEGORIES, LASH_CATEGORIES } from "@/lib/categories";
+import { buildKarteWhere, type KarteFilters } from "@/lib/karteFilters";
 import Topbar from "../Topbar";
 import KarteSearch from "./KarteSearch";
 import NewCustomerForm from "./NewCustomerForm";
@@ -19,7 +21,7 @@ const dateLabel = (d: Date) => {
 export default async function KartePage({
   searchParams,
 }: {
-  searchParams: Promise<{ store?: string; q?: string; customer?: string }>;
+  searchParams: Promise<KarteFilters>;
 }) {
   const session = await requireSession();
   if (!session) redirect("/");
@@ -28,20 +30,17 @@ export default async function KartePage({
   const { storeId, store } = await resolveStoreScope(session, sp.store);
   const scopeLabel = store ? store.name : "全店舗";
 
-  const customers = await prisma.customer.findMany({
-    where: {
-      storeId: storeId ?? undefined,
-      active: true,
-      ...(sp.q ? { OR: [{ name: { startsWith: sp.q } }, { kana: { startsWith: sp.q } }] } : {}),
-    },
+  const { where, error } = buildKarteWhere(sp, storeId);
+  const customers = error ? [] : await prisma.customer.findMany({
+    where,
     include: { store: true, visits: { select: { date: true }, orderBy: { date: "desc" }, take: 1 } },
     orderBy: { name: "asc" },
   });
 
-  const selectedId = sp.customer && customers.some((c) => c.id === sp.customer) ? sp.customer : customers[0]?.id;
+  const selectedId = sp.customer || customers[0]?.id;
   const selected = selectedId
-    ? await prisma.customer.findUnique({
-        where: { id: selectedId },
+    ? await prisma.customer.findFirst({
+        where: { id: selectedId, storeId: storeId ?? undefined },
         include: {
           store: true,
           primaryStaff: true,
@@ -57,13 +56,17 @@ export default async function KartePage({
 
   const qsBase = new URLSearchParams();
   if (sp.store) qsBase.set("store", sp.store);
-  if (sp.q) qsBase.set("q", sp.q);
+  for (const key of ["q", "gender", "category", "from", "to"] as const) {
+    if (sp[key]) qsBase.set(key, sp[key]);
+  }
 
   const customerHref = (id: string) => {
     const p = new URLSearchParams(qsBase);
     p.set("customer", id);
     return `?${p.toString()}`;
   };
+
+  const categories = [...new Set(store ? categoriesForStoreKind(store.kind) : [...SALON_CATEGORIES, ...LASH_CATEGORIES])];
 
   const staffOptionsForEdit = allStaff.map((s) => ({ id: s.id, name: s.name, title: s.title }));
 
@@ -73,7 +76,9 @@ export default async function KartePage({
       <div className="view">
         <div className="karte-layout">
           <div className="card card-pad">
-            <KarteSearch />
+            <KarteSearch categories={categories} />
+            {error && <div className="auth-error" role="alert">{error}</div>}
+            <div className="card-sub" role="status">検索結果：{customers.length}名</div>
             <NewCustomerForm
               isOwner={session.role === "OWNER"}
               fixedStoreId={storeId}
@@ -100,10 +105,10 @@ export default async function KartePage({
           </div>
 
           {selected ? (
-            <CustomerDetailPanel customer={selected} staffOptions={staffOptionsForEdit} />
+            <CustomerDetailPanel key={selected.id} customer={selected} staffOptions={staffOptionsForEdit} />
           ) : (
             <div className="card card-pad">
-              <div className="card-sub">お客様を選択、または新規登録してください。</div>
+              <div className="card-sub">{sp.customer ? "指定されたカルテが見つからないか、閲覧権限がありません。" : "お客様を選択、または新規登録してください。"}</div>
             </div>
           )}
         </div>

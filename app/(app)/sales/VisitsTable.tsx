@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateVisit, deleteVisit } from "./actions";
@@ -23,9 +24,9 @@ type Visit = {
   pointAmount: number | null;
   paymentMethod: string | null;
   memo: string | null;
-  store: { name: string; colorKey: string; kind: string };
+  store: { slug: string; name: string; colorKey: string; kind: string };
   staff: { name: string };
-  customer: { name: string };
+  customer: { id: string; name: string };
 };
 
 export default function VisitsTable({ visits, canEdit }: { visits: Visit[]; canEdit: boolean }) {
@@ -58,7 +59,11 @@ export default function VisitsTable({ visits, canEdit }: { visits: Visit[]; canE
                   <span className={`badge ${BADGE_CLASS[v.store.colorKey]}`}>{v.store.name}</span>
                 </td>
                 <td data-label="担当">{v.staff.name}</td>
-                <td data-label="お客様">{v.customer.name} 様</td>
+                <td data-label="お客様">
+                  <Link href={{ pathname: "/karte", query: { store: v.store.slug, customer: v.customer.id } }} style={{ color: "var(--text)", textDecoration: "underline", textUnderlineOffset: 3 }} title="カルテを開く">
+                    {v.customer.name} 様
+                  </Link>
+                </td>
                 <td data-label="施術内容">
                   {v.menuName || "店販のみ"}
                   {v.category && <span className="card-sub" style={{ margin: 0 }}>分類：{v.category}</span>}

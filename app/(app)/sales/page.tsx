@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/session";
 import { resolveStoreScope } from "@/lib/scope";
@@ -167,7 +168,9 @@ export default async function SalesPage({
                 <div className="list-row" key={v.id}>
                   <div className="grow">
                     <div className="title">
-                      {v.customer.name} 様・{v.menuName || "店販のみ"}
+                      <Link href={{ pathname: "/karte", query: { store: v.store.slug, customer: v.customer.id } }} style={{ color: "var(--text)", textDecoration: "underline", textUnderlineOffset: 3 }} title="カルテを開く">
+                        {v.customer.name} 様
+                      </Link>・{v.menuName || "店販のみ"}
                       {v.productName ? `＋店販：${v.productName}` : ""}
                       {v.pointAmount ? `＋ポイント${yen(v.pointAmount)}` : ""}
                     </div>
