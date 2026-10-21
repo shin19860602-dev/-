@@ -396,3 +396,31 @@ tr:last-child td { border-bottom: none; }
   tbody td { border: none; padding: 4px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; text-align: right !important; }
   tbody td::before { content: attr(data-label); color: var(--text-dim); font-weight: 700; font-size: 11px; text-align: left; }
 }
+
+/* Mobile sales entry and customer details; preserve existing theme colors. */
+.sale-entry-grid > *, .sale-entry-row > *, .visit-edit-form > *,
+.karte-search-form > *, .customer-detail-panel, .customer-detail-panel .tl-body { min-width: 0; }
+.sale-entry-form input, .sale-entry-form select, .visit-edit-form input { max-width: 100%; }
+.karte-search-details { margin-bottom: 12px; }
+.karte-search-details summary { cursor: pointer; font-weight: 700; font-size: 13px; overflow-wrap: anywhere; }
+.customer-detail-panel .serif, .customer-detail-panel .field-value,
+.customer-detail-panel .tl-title, .customer-detail-panel .tl-detail,
+.customer-detail-panel .badge { overflow-wrap: anywhere; white-space: normal; }
+.customer-detail-panel .customer-head { flex-wrap: wrap; }
+.customer-detail-panel .tl-title { min-width: 0; }
+.customer-detail-panel .tl-amount { flex-shrink: 0; }
+@media (max-width: 480px) {
+  .sale-entry-grid, .visit-edit-form, .karte-search-form { grid-template-columns: minmax(0, 1fr) !important; }
+  .sale-entry-grid > * { grid-column: 1 / -1 !important; }
+  .sale-entry-row { flex-direction: column; }
+  .sale-entry-row > input, .sale-entry-row > select { width: 100% !important; flex: none !important; }
+  .sale-entry-form input, .sale-entry-form select, .sale-entry-form textarea,
+  .visit-edit-form input, .visit-edit-form select, .visit-edit-form textarea,
+  .karte-layout .search-box input, .karte-search-form input, .karte-search-form select { font-size: 16px; min-width: 0; }
+  .customer-detail-panel .visit-summary { flex-wrap: wrap; }
+  .customer-detail-panel .customer-head > div:nth-child(2) { flex-basis: calc(100% - 80px); }
+  .customer-detail-panel .customer-head > button { margin-left: auto; flex-basis: 100%; }
+  .customer-detail-panel .tl-item { flex-direction: column; gap: 6px; }
+  .customer-detail-panel .field-grid { grid-template-columns: minmax(0, 1fr); }
+  .customer-detail-panel .field-grid > * { grid-column: 1 / -1 !important; }
+}

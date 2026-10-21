@@ -21,6 +21,9 @@ export default function KarteSearch({ categories }: { categories: string[] }) {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
+  const detailKey = ["gender", "category", "from", "to"].map((key) => searchParams.get(key) ?? "").join("|");
+  const hasDetails = ["gender", "category", "from", "to"].some((key) => Boolean(searchParams.get(key)));
+
   return (
     <>
     <div className="search-box">
@@ -41,7 +44,10 @@ export default function KarteSearch({ categories }: { categories: string[] }) {
         onCompositionEnd={(e) => onChange(e.currentTarget.value)}
       />
     </div>
+    <details className="karte-search-details" key={detailKey} open={hasDetails}>
+    <summary>詳細検索（性別・施術カテゴリ・来店日）</summary>
     <form
+      className="karte-search-form"
       key={["gender", "category", "from", "to"].map((key) => searchParams.get(key) ?? "").join("|")}
       style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, margin: "12px 0" }}
       onSubmit={(event) => {
@@ -92,6 +98,7 @@ export default function KarteSearch({ categories }: { categories: string[] }) {
         router.push(`${pathname}?${params.toString()}`, { scroll: false });
       }}>条件をクリア</button>
     </form>
+    </details>
     </>
   );
 }

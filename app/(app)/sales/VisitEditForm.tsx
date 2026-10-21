@@ -35,6 +35,7 @@ export default function VisitEditForm({ visit, storeKind, onDone }: { visit: Edi
 
   return (
     <form
+      className="visit-edit-form"
       style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, padding: "10px 0" }}
       action={(formData) => {
         setError(null);

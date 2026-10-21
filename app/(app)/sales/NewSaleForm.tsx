@@ -84,6 +84,7 @@ export default function NewSaleForm({
         </div>
       )}
       <form
+        className="sale-entry-form"
         ref={formRef}
         action={(formData) => {
           setError(null);
@@ -112,7 +113,7 @@ export default function NewSaleForm({
           });
         }}
       >
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 12 }}>
+        <div className="sale-entry-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginBottom: 12 }}>
           {isOwner && !fixedStoreId ? (
             <div style={{ gridColumn: "span 2" }}>
               <label className="form-label">店舗</label>
@@ -165,7 +166,7 @@ export default function NewSaleForm({
               <CustomerCombobox key={`${formKey}-${storeId}`} customers={customerOptions} name="customerId" placeholder="お名前で検索" />
             ) : (
               <div key={formKey} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", gap: 8 }}>
+                <div className="sale-entry-row" style={{ display: "flex", gap: 8 }}>
                   <input
                     className="field-input"
                     name="newCustomerName"
@@ -227,7 +228,7 @@ export default function NewSaleForm({
                 {couponCustom ? "一覧から選ぶ" : "自由入力に切替"}
               </button>
             </label>
-            <div style={{ display: "flex", gap: 8 }}>
+            <div className="sale-entry-row" style={{ display: "flex", gap: 8 }}>
               {couponCustom || couponOptions.length === 0 ? (
                 <input className="field-input" name="couponName" placeholder="例：似合わせカット＋カラークーポン" style={{ flex: 1 }} />
               ) : (
@@ -284,7 +285,7 @@ export default function NewSaleForm({
                 {menuCustom ? "一覧から選ぶ" : "自由入力に切替"}
               </button>
             </label>
-            <div style={{ display: "flex", gap: 8 }}>
+            <div className="sale-entry-row" style={{ display: "flex", gap: 8 }}>
               {menuCustom || menuOptions.length === 0 ? (
                 <input className="field-input" name="menuName" placeholder="例：カット＋カラー" style={{ flex: 1 }} />
               ) : (

@@ -64,10 +64,10 @@ export default function CustomerDetailPanel({ customer, staffOptions, mergeCandi
   }
 
   return (
-    <div className="card card-pad">
+    <div className="card card-pad customer-detail-panel">
       <div className="customer-head">
         <div className="photo-ph">{initial(customer.name)}</div>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <h2 className="serif" style={{ margin: "0 0 4px", fontSize: 20 }}>
             {customer.name} 様
           </h2>
@@ -146,7 +146,7 @@ export default function CustomerDetailPanel({ customer, staffOptions, mergeCandi
           <div className="tl-item" key={v.id}>
             <div className="tl-date">{dateLabel(v.date)}</div>
             <div className="tl-body">
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+              <div className="visit-summary" style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                 <div className="tl-title">
                   {v.menuName || "店販のみ"}
                   {v.productName ? `＋店販：${v.productName}` : ""}
