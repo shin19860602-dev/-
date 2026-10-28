@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { updateVintageSale, deleteVintageSale } from "./actions";
 import { yen } from "@/lib/analytics";
 import { sanitizeAmountInput } from "@/lib/format";
+import { jstParts } from "@/lib/date";
 
 const PAYMENT_LABEL: Record<string, string> = { cash: "現金", credit: "クレジット" };
-const dateLabel = (d: Date) => `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
-const toDateInput = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const dateLabel = (d: Date) => { const p = jstParts(d); return `${String(p.month + 1).padStart(2, "0")}/${String(p.date).padStart(2, "0")}`; };
+const toDateInput = (d: Date) => { const p = jstParts(d); return `${p.year}-${String(p.month + 1).padStart(2, "0")}-${String(p.date).padStart(2, "0")}`; };
 
 type Sale = {
   id: string;

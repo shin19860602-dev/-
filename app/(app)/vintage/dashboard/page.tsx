@@ -1,15 +1,16 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { monthBounds, yen } from "@/lib/analytics";
-import { jstParts } from "@/lib/date";
+import { yen } from "@/lib/analytics";
+import { aggregateVintageSales, vintageReportMonth } from "@/lib/vintageSalesReport";
 import Topbar from "../../Topbar";
 import BarList from "../../charts/BarList";
 import VintageTabs from "../VintageTabs";
 import { resolveVintageAccess } from "../access";
+import VintagePeriodControls from "../VintagePeriodControls";
 
 const ROLE_LABEL: Record<string, string> = { OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 
-export default async function VintageDashboardPage() {
+export default async function VintageDashboardPage({ searchParams }: { searchParams: Promise<{ month?: string | string[] }> }) {
   const access = await resolveVintageAccess();
   if (!access.session) redirect("/");
   const { session, store, hasAccess } = access;
@@ -28,14 +29,18 @@ export default async function VintageDashboardPage() {
     );
   }
 
-  const now = new Date();
-  const thisMonth = monthBounds(now, 0);
+  const selectedMonth = vintageReportMonth((await searchParams).month);
+  if (!selectedMonth) return <div className="view"><VintageTabs /><div className="card card-pad" role="alert">年月が正しくありません。<a href="/vintage/dashboard">今月の売上を表示する</a></div></div>;
 
   const monthSales = await prisma.vintageSale.findMany({
-    where: { storeId: store.id, date: { gte: thisMonth.start, lt: thisMonth.end } },
+    where: { storeId: store.id, date: { gte: selectedMonth.start, lt: selectedMonth.end } },
   });
 
   const monthTotal = monthSales.reduce((a, s) => a + s.amount, 0);
+  const dailyRows = aggregateVintageSales(selectedMonth, monthSales);
+  const cashTotal = dailyRows.reduce((sum, row) => sum + row.cash, 0);
+  const creditTotal = dailyRows.reduce((sum, row) => sum + row.credit, 0);
+  const unknownTotal = dailyRows.reduce((sum, row) => sum + row.unknown, 0);
 
   const categoryTotals = new Map<string, number>();
   const brandTotals = new Map<string, number>();
@@ -58,12 +63,15 @@ export default async function VintageDashboardPage() {
       <Topbar title="古着倉庫KUJEKUJE" scopeLabel="古着部門" roleLabel={ROLE_LABEL[session.role!]} />
       <div className="view">
         <VintageTabs />
+        <VintagePeriodControls key={selectedMonth.value} month={selectedMonth.value} />
 
         <div className="card card-pad" style={{ marginBottom: 16 }}>
-          <div className="card-title">今月の売上</div>
+          <div className="card-title">選択した月の売上</div>
           <div className="card-sub">
-            {jstParts(now).year}年{jstParts(now).month + 1}月
+            {selectedMonth.year}年{selectedMonth.month}月
           </div>
+          <div className="card-sub">現金売上 {yen(cashTotal)} ／ クレジット売上 {yen(creditTotal)}</div>
+          {unknownTotal !== 0 && <div className="card-sub">支払方法未登録 {yen(unknownTotal)}（合計には含み、現金・クレジットには含めていません）</div>}
           <div className="kpi-value" style={{ marginTop: 4 }}>
             {yen(monthTotal)}
           </div>
@@ -71,13 +79,13 @@ export default async function VintageDashboardPage() {
 
         <div className="grid-2">
           <div className="card card-pad">
-            <div className="card-title">分類別売上構成比（今月）</div>
+            <div className="card-title">分類別売上構成比（選択月）</div>
             <div className="card-sub">売上登録時に選んだ分類の内訳</div>
             <BarList bars={categoryBars} valueFormatter={yen} />
-            {categoryBars.length === 0 && <div className="card-sub">今月の記録はまだありません。</div>}
+            {categoryBars.length === 0 && <div className="card-sub">選択した月の記録はありません。</div>}
           </div>
           <div className="card card-pad">
-            <div className="card-title">ブランド別売上構成比（今月）</div>
+            <div className="card-title">ブランド別売上構成比（選択月）</div>
             <div className="card-sub">売上登録時に選んだブランドの内訳</div>
             <BarList bars={brandBars} valueFormatter={yen} />
             {brandBars.length === 0 && <div className="card-sub">対象ブランドの記録はまだありません。</div>}

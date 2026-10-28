@@ -1,15 +1,16 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { monthBounds } from "@/lib/analytics";
+import { vintageReportMonth } from "@/lib/vintageSalesReport";
 import Topbar from "../Topbar";
 import VintageTabs from "./VintageTabs";
 import VintageSaleForm from "./VintageSaleForm";
 import VintageSalesTable from "./VintageSalesTable";
 import { resolveVintageAccess } from "./access";
+import VintagePeriodControls from "./VintagePeriodControls";
 
 const ROLE_LABEL: Record<string, string> = { OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 
-export default async function VintagePage() {
+export default async function VintagePage({ searchParams }: { searchParams: Promise<{ month?: string | string[] }> }) {
   const access = await resolveVintageAccess();
   if (!access.session) redirect("/");
   const { session, store, hasAccess } = access;
@@ -28,12 +29,12 @@ export default async function VintagePage() {
     );
   }
 
-  const now = new Date();
-  const thisMonth = monthBounds(now, 0);
+  const selectedMonth = vintageReportMonth((await searchParams).month);
+  if (!selectedMonth) return <div className="view"><VintageTabs /><div className="card card-pad" role="alert">年月が正しくありません。<a href="/vintage">今月の売上を表示する</a></div></div>;
 
   const [monthSales, tags] = await Promise.all([
     prisma.vintageSale.findMany({
-      where: { storeId: store.id, date: { gte: thisMonth.start, lt: thisMonth.end } },
+      where: { storeId: store.id, date: { gte: selectedMonth.start, lt: selectedMonth.end } },
       include: { staff: true },
       orderBy: { date: "desc" },
     }),
@@ -48,10 +49,11 @@ export default async function VintagePage() {
       <Topbar title="古着倉庫KUJEKUJE" scopeLabel="古着部門" roleLabel={ROLE_LABEL[session.role!]} />
       <div className="view">
         <VintageTabs />
+        <VintagePeriodControls key={selectedMonth.value} month={selectedMonth.value} />
         <VintageSaleForm storeId={store.id} categories={categories} brands={brands} />
 
         <div className="card card-pad" style={{ marginTop: 0 }}>
-          <div className="card-title">売上履歴（今月）</div>
+          <div className="card-title">売上履歴（{selectedMonth.year}年{selectedMonth.month}月）</div>
           <VintageSalesTable sales={monthSales} canEdit={true} categories={categories} brands={brands} />
         </div>
       </div>
