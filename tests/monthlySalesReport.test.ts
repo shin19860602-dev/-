@@ -18,7 +18,7 @@ test("月の日数・うるう年・日本時間の月境界を正しく処理�
 
 test("技術・商品・ポイントを二重計上せず経費を日ごとに合計する", () => {
   const rows = aggregateMonthlySales(month, [visit(), visit({ paymentMethod: "credit", amount: 5000, pointAmount: 0, productAmount: 1000 })], [{ date: visit().date, amount: 300 }, { date: visit().date, amount: 700 }]);
-  assert.deepEqual(rows[0], { day: 1, cash: 16000, credit: 5000, points: 800, productCash: 2200, productCredit: 1000, expenses: 1000, unknownService: 0, unknownProduct: 0 });
+  assert.deepEqual(rows[0], { day: 1, cash: 16000, credit: 5000, points: 800, productCash: 2200, productCredit: 1000, expenses: 1000, expenseSupplies: 0, expenseParking: 0, expenseOther: 1000, unknownService: 0, unknownProduct: 0 });
   assert.equal(rows.length, 31);
   assert.equal(rows[30].cash, 0);
 });
@@ -87,4 +87,55 @@ test("短い月・空の月も正しい最終日と0円の合計を出し、支�
   assert.equal(unknownWorkbook.worksheets.length, 2);
   assert.equal(unknownWorkbook.worksheets[1].getCell("B2").value, 16000);
   assert.equal(unknownWorkbook.worksheets[0].getCell("A2").type, ExcelJS.ValueType.String);
+});
+
+test("リアンを単独表示する時だけ経費内訳を出し、スタッフの自店舗表示にも適用する", () => {
+  const owner = { role: "OWNER", storeId: null, active: true };
+  assert.equal(monthlyExportScope(owner, stores, "lien")?.expenseBreakdown, true);
+  assert.equal(monthlyExportScope({ role: "STAFF", storeId: "b", active: true }, stores)?.expenseBreakdown, true);
+  assert.equal(monthlyExportScope(owner, stores)?.expenseBreakdown, false);
+  assert.equal(monthlyExportScope(owner, stores, "chura")?.expenseBreakdown, false);
+});
+
+test("消耗品・駐車場代・その他の経費を日別集計し、全カテゴリと返金調整を合計に残す", () => {
+  const day = visit().date;
+  const rows = aggregateMonthlySales(month, [], [
+    { date: day, amount: 1000, category: "消耗品" },
+    { date: day, amount: -100, category: "消耗品" },
+    { date: day, amount: 300, category: "駐車場" },
+    { date: day, amount: 200, category: "駐車場代" },
+    { date: day, amount: 5000, category: "HPB" },
+    { date: day, amount: 1500, category: "光熱費" },
+    { date: day, amount: 100, category: "未分類の旧項目" },
+    { date: month.end, amount: 99999, category: "消耗品" },
+  ]);
+  assert.equal(rows[0].expenseSupplies, 900);
+  assert.equal(rows[0].expenseParking, 500);
+  assert.equal(rows[0].expenseOther, 6600);
+  assert.equal(rows[0].expenses, 8000);
+  for (const row of rows) assert.equal(row.expenses, row.expenseSupplies + row.expenseParking + row.expenseOther);
+  assert.equal(rows[1].expenses, 0);
+});
+
+test("リアンExcelの内訳列・月合計・支払不明の注意表示と印刷範囲を再読込で照合する", async () => {
+  const rows = aggregateMonthlySales(month, [visit({ paymentMethod: null })], [
+    { date: visit().date, amount: 1200, category: "消耗品" },
+    { date: visit().date, amount: 500, category: "駐車場" },
+    { date: new Date("2026-10-31T02:00:00Z"), amount: 700, category: "その他" },
+  ]);
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load((await monthlySalesWorkbook(month, "Lien", rows, { expenseBreakdown: true })).buffer as ArrayBuffer);
+  const sheet = workbook.worksheets[0];
+  assert.deepEqual((sheet.getRow(4).values as unknown[]).slice(7), ["消耗品", "駐車場代", "その他の経費", "経費合計"]);
+  assert.equal(sheet.getCell("G5").value, 1200);
+  assert.equal(sheet.getCell("H5").value, 500);
+  assert.equal(sheet.getCell("J5").value, 1700);
+  assert.equal(sheet.getCell("I35").value, 700);
+  assert.equal(sheet.getCell("G6").value, 0);
+  assert.deepEqual(sheet.getCell("G36").value, { formula: "SUM(G5:G35)", result: 1200 });
+  assert.deepEqual(sheet.getCell("H36").value, { formula: "SUM(H5:H35)", result: 500 });
+  assert.deepEqual(sheet.getCell("I36").value, { formula: "SUM(I5:I35)", result: 700 });
+  assert.deepEqual(sheet.getCell("J36").value, { formula: "SUM(J5:J35)", result: 2400 });
+  assert.equal(sheet.pageSetup.printArea, "A1:J37");
+  assert.equal(workbook.worksheets[1].name, "支払方法の確認");
 });

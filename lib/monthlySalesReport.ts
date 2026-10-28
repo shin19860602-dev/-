@@ -15,14 +15,14 @@ export function monthlyExportScope(actor: ExportActor, stores: ExportStore[], sl
   const allowed = stores.filter(store => ["SALON", "LASH"].includes(store.kind) && (actor.role === "OWNER" || store.id === actor.storeId));
   const selected = slug ? allowed.filter(store => store.slug === slug) : allowed;
   if (!selected.length) return null;
-  return { storeIds: selected.map(store => store.id), label: selected.length === 1 ? selected[0].name : "全サロン" };
+  return { storeIds: selected.map(store => store.id), label: selected.length === 1 ? selected[0].name : "全サロン", expenseBreakdown: selected.length === 1 && selected[0].slug === "lien" };
 }
 
 export type ExportVisit = { date: Date; amount: number; productAmount: number | null; pointAmount: number | null; paymentMethod: string | null };
-export type ExportExpense = { date: Date; amount: number };
-export type DailySalesRow = { day: number; cash: number; credit: number; points: number; productCash: number; productCredit: number; expenses: number; unknownService: number; unknownProduct: number };
+export type ExportExpense = { date: Date; amount: number; category?: string };
+export type DailySalesRow = { day: number; cash: number; credit: number; points: number; productCash: number; productCredit: number; expenses: number; expenseSupplies: number; expenseParking: number; expenseOther: number; unknownService: number; unknownProduct: number };
 export function aggregateMonthlySales(month: SalesMonth, visits: ExportVisit[], expenses: ExportExpense[]): DailySalesRow[] {
-  const rows: DailySalesRow[] = Array.from({ length: month.days }, (_, i) => ({ day: i + 1, cash: 0, credit: 0, points: 0, productCash: 0, productCredit: 0, expenses: 0, unknownService: 0, unknownProduct: 0 }));
+  const rows: DailySalesRow[] = Array.from({ length: month.days }, (_, i) => ({ day: i + 1, cash: 0, credit: 0, points: 0, productCash: 0, productCredit: 0, expenses: 0, expenseSupplies: 0, expenseParking: 0, expenseOther: 0, unknownService: 0, unknownProduct: 0 }));
   const rowFor = (date: Date) => date >= month.start && date < month.end ? rows[jstParts(date).date - 1] : undefined;
   for (const visit of visits) {
     const row = rowFor(visit.date);
@@ -33,6 +33,13 @@ export function aggregateMonthlySales(month: SalesMonth, visits: ExportVisit[], 
     else if (visit.paymentMethod === "credit") { row.credit += visit.amount; row.productCredit += visit.productAmount ?? 0; }
     else { row.unknownService += visit.amount; row.unknownProduct += visit.productAmount ?? 0; }
   }
-  for (const expense of expenses) { const row = rowFor(expense.date); if (row) row.expenses += expense.amount; }
+  for (const expense of expenses) {
+    const row = rowFor(expense.date);
+    if (!row) continue;
+    row.expenses += expense.amount;
+    if (expense.category === "消耗品") row.expenseSupplies += expense.amount;
+    else if (expense.category === "駐車場" || expense.category === "駐車場代") row.expenseParking += expense.amount;
+    else row.expenseOther += expense.amount;
+  }
   return rows;
 }

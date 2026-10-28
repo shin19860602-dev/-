@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export default function MonthlySalesExport({ initialMonth, storeSlug, scopeLabel }: { initialMonth: string; storeSlug?: string; scopeLabel: string }) {
+export default function MonthlySalesExport({ initialMonth, storeSlug, scopeLabel, expenseBreakdown = false }: { initialMonth: string; storeSlug?: string; scopeLabel: string; expenseBreakdown?: boolean }) {
   const [month, setMonth] = useState(initialMonth);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -31,6 +31,7 @@ export default function MonthlySalesExport({ initialMonth, storeSlug, scopeLabel
   return <section className="card card-pad" style={{ marginBottom: 16 }} aria-label="月別Excel出力">
     <div className="card-title">日別売上・経費をExcelに出力</div>
     <p className="card-sub">{scopeLabel} ／ 1日〜月末の日別表と月合計。現金・クレジットは技術分で、商品・ポイント・経費は別列です。</p>
+    {expenseBreakdown && <p className="card-sub">リアンの経費は「消耗品」「駐車場代」「その他の経費」「経費合計」に分けて出力します。</p>}
     <form onSubmit={download} style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
       <label style={{ display: "grid", gap: 6, minWidth: 0 }}><span className="field-label">出力する月</span><input type="month" required min="2000-01" max="9999-12" aria-label="Excelの出力月" value={month} onChange={event => { setMonth(event.target.value); setMessage(""); }} style={{ fontSize: 16, maxWidth: "100%" }} /></label>
       <button type="submit" className="btn-primary" disabled={busy || !month}>{busy ? "Excelを作成中…" : "Excelをダウンロード"}</button>
