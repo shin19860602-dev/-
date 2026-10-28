@@ -98,7 +98,7 @@ export default async function SalesPage({
     <>
       <Topbar title="売上" scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
       <div className="view">
-        <MonthlySalesExport initialMonth={`${jstParts().year}-${String(jstParts().month + 1).padStart(2, "0")}`} storeSlug={sp.store} scopeLabel={scopeLabel} expenseBreakdown={store?.slug === "lien"} />
+        <MonthlySalesExport initialMonth={`${jstParts().year}-${String(jstParts().month + 1).padStart(2, "0")}`} storeSlug={sp.store} scopeLabel={scopeLabel} />
         <NewSaleForm
           isOwner={session.role === "OWNER"}
           fixedStoreId={storeId}

@@ -30,7 +30,7 @@ export async function GET(request: Request) {
       prisma.visit.findMany({ where, select: { date: true, amount: true, productAmount: true, pointAmount: true, paymentMethod: true } }),
       prisma.expense.findMany({ where, select: { date: true, amount: true, category: true } }),
     ], { isolationLevel: "RepeatableRead" });
-    const bytes = await monthlySalesWorkbook(month, scope.label, aggregateMonthlySales(month, visits, expenses), { expenseBreakdown: scope.expenseBreakdown });
+    const bytes = await monthlySalesWorkbook(month, scope.label, aggregateMonthlySales(month, visits, expenses));
     const filename = `${month.value}_${scope.label}_日別売上・経費.xlsx`;
     return new Response(bytes, { headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

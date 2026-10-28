@@ -15,7 +15,7 @@ export function monthlyExportScope(actor: ExportActor, stores: ExportStore[], sl
   const allowed = stores.filter(store => ["SALON", "LASH"].includes(store.kind) && (actor.role === "OWNER" || store.id === actor.storeId));
   const selected = slug ? allowed.filter(store => store.slug === slug) : allowed;
   if (!selected.length) return null;
-  return { storeIds: selected.map(store => store.id), label: selected.length === 1 ? selected[0].name : "全サロン", expenseBreakdown: selected.length === 1 && selected[0].slug === "lien" };
+  return { storeIds: selected.map(store => store.id), label: selected.length === 1 ? selected[0].name : "全サロン" };
 }
 
 export type ExportVisit = { date: Date; amount: number; productAmount: number | null; pointAmount: number | null; paymentMethod: string | null };

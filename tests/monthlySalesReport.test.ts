@@ -65,14 +65,14 @@ test("Excelを再読込し、指定列・全日付・数値型・月合計の数
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(bytes.buffer as ArrayBuffer);
   const sheet = workbook.worksheets[0];
-  assert.deepEqual((sheet.getRow(4).values as unknown[]).slice(1), [ "日付", "現金売上", "クレジット売上", "ポイント", "商品現金売上", "商品クレジット売上", "経費"]);
+  assert.deepEqual((sheet.getRow(4).values as unknown[]).slice(1), [ "日付", "現金売上", "クレジット売上", "ポイント", "商品現金売上", "商品クレジット売上", "消耗品", "駐車場代", "その他の経費", "経費合計"]);
   assert.equal(sheet.getCell("A5").value, "1日");
   assert.equal(sheet.getCell("A35").value, "31日");
   assert.equal(sheet.getCell("B5").value, 16000);
-  assert.equal(sheet.getCell("G5").value, 980);
+  assert.equal(sheet.getCell("J5").value, 980);
   assert.equal(sheet.getCell("B6").value, 0);
   assert.deepEqual(sheet.getCell("D36").value, { formula: "SUM(D5:D35)", result: 1600 });
-  assert.deepEqual(sheet.getCell("G36").value, { formula: "SUM(G5:G35)", result: 980 });
+  assert.deepEqual(sheet.getCell("J36").value, { formula: "SUM(J5:J35)", result: 980 });
   assert.equal(workbook.worksheets.length, 1);
 });
 
@@ -89,12 +89,15 @@ test("短い月・空の月も正しい最終日と0円の合計を出し、支�
   assert.equal(unknownWorkbook.worksheets[0].getCell("A2").type, ExcelJS.ValueType.String);
 });
 
-test("リアンを単独表示する時だけ経費内訳を出し、スタッフの自店舗表示にも適用する", () => {
+test("店舗単独・全サロン・スタッフの自店舗出力は同じ経費内訳の列を持つ", async () => {
   const owner = { role: "OWNER", storeId: null, active: true };
-  assert.equal(monthlyExportScope(owner, stores, "lien")?.expenseBreakdown, true);
-  assert.equal(monthlyExportScope({ role: "STAFF", storeId: "b", active: true }, stores)?.expenseBreakdown, true);
-  assert.equal(monthlyExportScope(owner, stores)?.expenseBreakdown, false);
-  assert.equal(monthlyExportScope(owner, stores, "chura")?.expenseBreakdown, false);
+  const scopes = [monthlyExportScope(owner, stores, "lien"), monthlyExportScope(owner, stores, "chura"), monthlyExportScope(owner, stores), monthlyExportScope({ role: "STAFF", storeId: "b", active: true }, stores)];
+  for (const scope of scopes) {
+    assert.ok(scope);
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load((await monthlySalesWorkbook(month, scope.label, aggregateMonthlySales(month, [], []))).buffer as ArrayBuffer);
+    assert.deepEqual((workbook.worksheets[0].getRow(4).values as unknown[]).slice(7), ["消耗品", "駐車場代", "その他の経費", "経費合計"]);
+  }
 });
 
 test("消耗品・駐車場代・その他の経費を日別集計し、全カテゴリと返金調整を合計に残す", () => {
@@ -124,7 +127,7 @@ test("リアンExcelの内訳列・月合計・支払不明の注意表示と印
     { date: new Date("2026-10-31T02:00:00Z"), amount: 700, category: "その他" },
   ]);
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load((await monthlySalesWorkbook(month, "Lien", rows, { expenseBreakdown: true })).buffer as ArrayBuffer);
+  await workbook.xlsx.load((await monthlySalesWorkbook(month, "Lien", rows)).buffer as ArrayBuffer);
   const sheet = workbook.worksheets[0];
   assert.deepEqual((sheet.getRow(4).values as unknown[]).slice(7), ["消耗品", "駐車場代", "その他の経費", "経費合計"]);
   assert.equal(sheet.getCell("G5").value, 1200);
