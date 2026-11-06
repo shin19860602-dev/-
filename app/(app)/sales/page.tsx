@@ -12,6 +12,7 @@ import VisitsTable from "./VisitsTable";
 import NewExpenseForm from "./NewExpenseForm";
 import ExpensesTable from "./ExpensesTable";
 import MonthlySalesExport from "./MonthlySalesExport";
+import MonthlyGoalBanner from "./MonthlyGoalBanner";
 
 const ROLE_LABEL: Record<string, string> = { OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 const GENDER_LABEL: Record<string, string> = { male: "男性", female: "女性", other: "その他" };
@@ -98,6 +99,7 @@ export default async function SalesPage({
     <>
       <Topbar title="売上" scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
       <div className="view">
+        <MonthlyGoalBanner storeId={storeId} />
         <MonthlySalesExport initialMonth={`${jstParts().year}-${String(jstParts().month + 1).padStart(2, "0")}`} storeSlug={sp.store} scopeLabel={scopeLabel} />
         <NewSaleForm
           isOwner={session.role === "OWNER"}
