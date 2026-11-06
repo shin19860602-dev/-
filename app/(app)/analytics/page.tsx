@@ -8,11 +8,14 @@ import Topbar from "../Topbar";
 import LineChart from "../charts/LineChart";
 import BarList from "../charts/BarList";
 import MonthSelect from "../MonthSelect";
+import Link from "next/link";
+import AnnualAnalytics from "./AnnualAnalytics";
 
-export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<{ store?: string; month?: string }> }) {
+export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<{ store?: string; month?: string; mode?: string; year?: string }> }) {
   const session = await requireSession();
   if (!session) redirect("/");
-  if (session.role !== "OWNER") {
+  const actor = await prisma.staff.findUnique({ where: { id: session.staffId! }, select: { role: true, active: true } });
+  if (!actor?.active || actor.role !== "OWNER") {
     return (
       <>
         <Topbar title="集計・分析" scopeLabel="-" roleLabel={session.role === "MANAGER" ? "マネージャー権限" : "スタッフ権限"} />
@@ -29,6 +32,28 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   const sp = await searchParams;
   const { storeId, store } = await resolveStoreScope(session, sp.store);
   const scopeLabel = store ? store.name : "全店舗";
+  if (sp.store && !store) redirect("/analytics");
+  const annualQuery = new URLSearchParams({ mode: "year" });
+  const monthlyQuery = new URLSearchParams();
+  if (sp.store) { annualQuery.set("store", sp.store); monthlyQuery.set("store", sp.store); }
+  const periodTabs = <div className="filters" style={{ marginBottom: 16 }}>
+    <Link className={sp.mode === "year" ? "btn-ghost" : "btn-primary"} href={`/analytics?${monthlyQuery}`}>月別</Link>
+    <Link className={sp.mode === "year" ? "btn-primary" : "btn-ghost"} href={`/analytics?${annualQuery}`}>年間まとめ</Link>
+  </div>;
+  if (sp.mode === "year") {
+    const currentYear = jstParts().year;
+    const year = sp.year && /^\d{4}$/.test(sp.year) && Number(sp.year) >= 2000 && Number(sp.year) <= currentYear ? Number(sp.year) : currentYear;
+    return <><Topbar title="集計・分析" scopeLabel={scopeLabel} roleLabel="オーナー全権限" /><div className="view">
+      {periodTabs}
+      <form action="/analytics" className="filters" style={{ marginBottom: 16 }}>
+        <input type="hidden" name="mode" value="year" />
+        {sp.store && <input type="hidden" name="store" value={sp.store} />}
+        <label>表示する年 <input aria-label="年間集計の年" type="number" name="year" min={2000} max={currentYear} defaultValue={year} required style={{ width: 110, fontSize: 16 }} /></label>
+        <button type="submit" className="btn-primary">年間集計を表示</button>
+      </form>
+      <AnnualAnalytics year={year} storeId={storeId} scopeLabel={scopeLabel} storeSlug={sp.store} />
+    </div></>;
+  }
 
   const now = new Date();
 
@@ -128,6 +153,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
     <>
       <Topbar title="集計・分析" scopeLabel={scopeLabel} roleLabel="オーナー全権限" />
       <div className="view">
+        {periodTabs}
         <div className="card card-pad" style={{ marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
             <div>
