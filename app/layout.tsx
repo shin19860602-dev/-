@@ -4,6 +4,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "貝 | サロン管理ソフト",
   description: "美容室・まつ毛エクステサロンの売上・カルテ・スタッフ管理",
+  icons: {
+    icon: [{ url: "/salon-icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/salon-apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
