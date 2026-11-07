@@ -104,7 +104,7 @@ export const encouragements = [
 ] as const;
 
 export function monthlyGoal(amount: number): number {
-  return Math.ceil(Math.max(0, amount) * 115 / 100);
+  return Math.ceil(Math.max(0, amount) * 110 / 100);
 }
 
 // 日本時間の日付ごとに、店舗別にシャッフルしたコメントを巡回する。

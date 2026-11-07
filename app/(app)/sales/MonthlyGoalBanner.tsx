@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { jstDate, jstParts } from "@/lib/date";
 import { yen } from "@/lib/analytics";
-import { dailyEncouragement, monthlyGoal, encouragements } from "@/lib/monthlyGoals";
+import { dailyEncouragement, monthlyGoal } from "@/lib/monthlyGoals";
 
 export default async function MonthlyGoalBanner({ storeId }: { storeId?: string }) {
   const now = new Date();
@@ -17,7 +17,6 @@ export default async function MonthlyGoalBanner({ storeId }: { storeId?: string 
   });
   return <section aria-label="今月の店舗別目標" className="card card-pad" style={{ marginBottom: 20, border: "2px solid var(--accent)", background: "var(--surface)" }}>
     <h2 style={{ fontSize: 26, margin: "0 0 8px", color: "var(--accent)" }}>今月の目標！！</h2>
-    <p className="card-sub">{p.year}年{p.month + 1}月 ／ 前年同月の売上から15％アップ</p>
     <div className="grid-2">{stores.map(store => {
       const base = previous.find(row => row.storeId === store.id);
       return <div key={store.id} style={{ padding: "12px 0", minWidth: 0 }}>
@@ -29,6 +28,5 @@ export default async function MonthlyGoalBanner({ storeId }: { storeId?: string 
         <p style={{ fontWeight: 600, lineHeight: 1.8, overflowWrap: "anywhere" }}>🌺 今日の応援メッセージ<br />{dailyEncouragement(now, store.id)}</p>
       </div>;
     })}</div>
-    <p className="card-sub">技術売上は登録済みの技術料金（ポイント差引後）、店販売上は商品売上が基準です。1円未満は切り上げます。応援コメントは{encouragements.length}種類を店舗ごとにランダムな順番で表示し、毎日午前0時（日本時間）に切り替わります。</p>
   </section>;
 }

@@ -33,14 +33,15 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   const { storeId, store } = await resolveStoreScope(session, sp.store);
   const scopeLabel = store ? store.name : "全店舗";
   if (sp.store && !store) redirect("/analytics");
+  const annualMode = sp.mode !== "month" && !sp.month;
   const annualQuery = new URLSearchParams({ mode: "year" });
-  const monthlyQuery = new URLSearchParams();
+  const monthlyQuery = new URLSearchParams({ mode: "month" });
   if (sp.store) { annualQuery.set("store", sp.store); monthlyQuery.set("store", sp.store); }
   const periodTabs = <div className="filters" style={{ marginBottom: 16 }}>
-    <Link className={sp.mode === "year" ? "btn-ghost" : "btn-primary"} href={`/analytics?${monthlyQuery}`}>月別</Link>
-    <Link className={sp.mode === "year" ? "btn-primary" : "btn-ghost"} href={`/analytics?${annualQuery}`}>年間まとめ</Link>
+    <Link className={annualMode ? "btn-ghost" : "btn-primary"} href={`/analytics?${monthlyQuery}`}>月別</Link>
+    <Link className={annualMode ? "btn-primary" : "btn-ghost"} href={`/analytics?${annualQuery}`}>年間まとめ</Link>
   </div>;
-  if (sp.mode === "year") {
+  if (annualMode) {
     const currentYear = jstParts().year;
     const year = sp.year && /^\d{4}$/.test(sp.year) && Number(sp.year) >= 2000 && Number(sp.year) <= currentYear ? Number(sp.year) : currentYear;
     return <><Topbar title="集計・分析" scopeLabel={scopeLabel} roleLabel="オーナー全権限" /><div className="view">
