@@ -111,7 +111,15 @@ export default async function AnnualAnalytics({ year, storeId, scopeLabel, store
       })}</tbody></table></div>
     </div>
     <div className="card card-pad" style={{ marginTop: 16 }}>
-      <div className="card-title">1月〜12月の内訳</div>
+      <div className="card-title">{year}年 1月〜12月の内訳</div>
+      <form action="/analytics" className="filters" style={{ margin: "12px 0" }}>
+        <input type="hidden" name="mode" value="year" />
+        {storeSlug && <input type="hidden" name="store" value={storeSlug} />}
+        <label>表示する年 <select name="year" aria-label="内訳を表示する年" defaultValue={year} style={{ fontSize: 16 }}>
+          {Array.from({ length: jstParts().year - 2000 + 1 }, (_, i) => jstParts().year - i).map(option => <option key={option} value={option}>{option}年</option>)}
+        </select></label>
+        <button type="submit" className="btn-primary">この年の内訳を見る</button>
+      </form>
       <div className="table-wrap"><table><thead><tr>{["月", "技術売上", "商品売上", "売上合計", "現金（商品含む）", "カード（商品含む）", "支払方法未登録", "ポイント", "登録経費", "来店件数", "来店単価"].map(label => <th key={label}>{label}</th>)}</tr></thead>
         <tbody>{months.map(row => {
           const query = new URLSearchParams({ month: `${year}-${String(row.month).padStart(2, "0")}` });
