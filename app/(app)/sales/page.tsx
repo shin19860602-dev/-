@@ -13,6 +13,7 @@ import NewExpenseForm from "./NewExpenseForm";
 import ExpensesTable from "./ExpensesTable";
 import MonthlySalesExport from "./MonthlySalesExport";
 import MonthlyGoalBanner from "./MonthlyGoalBanner";
+import { paymentTotals } from "@/lib/paymentTotals";
 
 const ROLE_LABEL: Record<string, string> = { OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 const GENDER_LABEL: Record<string, string> = { male: "男性", female: "女性", other: "その他" };
@@ -86,6 +87,8 @@ export default async function SalesPage({
   const staffOptions = allStaff.map((s) => ({ id: s.id, name: s.name }));
   const totalAmount = visits.reduce((a, v) => a + visitTotal(v), 0);
   const todayTotal = todayVisits.reduce((a, v) => a + visitTotal(v), 0);
+  const todayPayments = paymentTotals(todayVisits);
+  const periodPayments = paymentTotals(visits);
   const todayServiceTotal = todayVisits.reduce((a, v) => a + v.amount, 0);
   const todayProductTotal = todayVisits.reduce((a, v) => a + (v.productAmount ?? 0), 0);
   const todayPointTotal = todayVisits.reduce((a, v) => a + (v.pointAmount ?? 0), 0);
@@ -154,6 +157,11 @@ export default async function SalesPage({
 
           <div className="card-sub" style={{ marginTop: 10 }}>
             合計 <strong style={{ color: "var(--text)" }}>{yen(todayTotal)}</strong>（{todayVisits.length}件）
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", marginTop: 6 }}>
+              <span>現金売上（技術＋店販） <strong>{yen(todayPayments.cash)}</strong></span>
+              <span>クレジット売上（技術＋店販） <strong>{yen(todayPayments.credit)}</strong></span>
+              {todayPayments.unknown !== 0 && <span>支払方法未登録 {yen(todayPayments.unknown)}</span>}
+            </div>
             <span style={{ marginLeft: 10 }}>
               去年の同じ日（{lastYearDateLabel}）は {yen(lastYearTodayTotal)}
               {lastYearTodayTotal > 0 && (
@@ -196,6 +204,11 @@ export default async function SalesPage({
           <div style={{ flex: 1 }} />
           <span className="card-sub" style={{ margin: 0 }}>
             合計 <strong style={{ color: "var(--text)" }}>{yen(totalAmount)}</strong>（{visits.length}件）
+            <span style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", marginTop: 6 }}>
+              <span>現金売上（技術＋店販） <strong>{yen(periodPayments.cash)}</strong></span>
+              <span>クレジット売上（技術＋店販） <strong>{yen(periodPayments.credit)}</strong></span>
+              {periodPayments.unknown !== 0 && <span>支払方法未登録 {yen(periodPayments.unknown)}</span>}
+            </span>
           </span>
         </div>
 
