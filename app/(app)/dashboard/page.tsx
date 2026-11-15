@@ -186,6 +186,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const dailyLabels: string[] = [];
   const dailyDateLabels: string[] = [];
   const dailyWeekday: string[] = [];
+  const dailyCustomerCounts: number[] = [];
   const dailyThisYear: number[] = [];
   const dailyLastYear: number[] = [];
   const dailyExpense: number[] = [];
@@ -208,6 +209,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     dailyDateLabels.push(`${selMonth}/${d}`);
     dailyWeekday.push(weekday);
     const dayVisits = summaryMonthVisits.filter((r) => r.date >= dayStart && r.date < dayEnd);
+    dailyCustomerCounts.push(new Set(dayVisits.filter((visit) => visit.customer.active).map((visit) => visit.customerId)).size);
     dailyThisYear.push(dayVisits.reduce((a, r) => a + visitTotal(r), 0));
     dailyTechCash.push(dayVisits.filter((r) => r.paymentMethod === "cash").reduce((a, r) => a + r.amount, 0));
     dailyTechCredit.push(dayVisits.filter((r) => r.paymentMethod === "credit").reduce((a, r) => a + r.amount, 0));
@@ -343,6 +345,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <thead>
                 <tr>
                   <th rowSpan={2}>日付</th>
+                  <th rowSpan={2}>客数</th>
                   <th colSpan={4} style={{ textAlign: "center" }}>技術売上</th>
                   <th colSpan={3} style={{ textAlign: "center" }}>商品売上</th>
                   <th colSpan={7} style={{ textAlign: "center" }}>経費</th>
@@ -370,10 +373,21 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                   const techSubtotal = dailyTechCash[i] + dailyTechCredit[i] + dailyTechPoint[i];
                   const productSubtotal = dailyProductCash[i] + dailyProductCredit[i];
                   const net = dailyThisYear[i] - dailyExpense[i];
+                  const count = dailyCustomerCounts[i];
+                  const date = [selYear, String(selMonth).padStart(2, "0"), String(i + 1).padStart(2, "0")].join("-");
+                  const karteParams = new URLSearchParams({ from: date, to: date });
+                  if (store) karteParams.set("store", store.slug);
                   return (
                     <tr key={label}>
                       <td data-label="日付">
                         {label}（{dailyWeekday[i]}）
+                      </td>
+                      <td data-label="客数" style={{ textAlign: "right" }}>
+                        {count > 0 ? (
+                          <a href={`/karte?${karteParams.toString()}`} aria-label={`${date}のカルテ ${count}名`} style={{ textDecoration: "underline" }}>
+                            {count}名
+                          </a>
+                        ) : "0名"}
                       </td>
                       <td data-label="技術・現金" style={{ textAlign: "right" }}>{yen(dailyTechCash[i])}</td>
                       <td data-label="技術・クレジット" style={{ textAlign: "right" }}>{yen(dailyTechCredit[i])}</td>
@@ -398,6 +412,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                 <tfoot>
                   <tr>
                     <td data-label="合計" style={{ fontWeight: 700 }}>合計</td>
+                    <td data-label="延べ客数" style={{ textAlign: "right", fontWeight: 700 }}>{dailyCustomerCounts.reduce((sum, count) => sum + count, 0)}名</td>
                     <td data-label="技術・現金" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyTechCash.reduce((a, v) => a + v, 0))}</td>
                     <td data-label="技術・クレジット" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyTechCredit.reduce((a, v) => a + v, 0))}</td>
                     <td data-label="技術・ポイント" style={{ textAlign: "right", fontWeight: 700 }}>{yen(dailyTechPoint.reduce((a, v) => a + v, 0))}</td>
