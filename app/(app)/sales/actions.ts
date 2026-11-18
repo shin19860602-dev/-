@@ -52,7 +52,8 @@ export async function createVisit(formData: FormData) {
   }
 
   // 技術売上合計はフォームの自動計算値をそのまま使う（クーポン・メニューを使わず直接入力された場合もこれが正になる）
-  const amountRaw = amountOf(data.amount) ?? 0;
+  const technicalAmount = amountOf(data.amount);
+  const amountRaw = technicalAmount ?? 0;
 
   // クーポン・メニュー個別の金額欄は「技術売上合計」を自動計算するための補助で、保存されるのは
   // 名前と技術売上合計だけ。名前と金額の組み合わせでは弾かず、合計金額の有無だけで判定する。
@@ -68,7 +69,7 @@ export async function createVisit(formData: FormData) {
   }
   if (hasTechnical) {
     if (!combinedMenuName) return { ok: false as const, error: "クーポンまたはメニューの名前を入力してください。" };
-    if (amountRaw <= 0) return { ok: false as const, error: "技術売上合計の金額をご確認ください。" };
+    if (technicalAmount === undefined || !Number.isInteger(amountRaw) || amountRaw < 0) return { ok: false as const, error: "技術売上合計の金額を入力してください。手直しなどは0円で登録できます。" };
   }
   const amount = hasTechnical ? amountRaw : 0;
 
@@ -161,7 +162,8 @@ export async function updateVisit(formData: FormData) {
   }
 
   const menuName = data.menuName || undefined;
-  const amountRaw = amountOf(data.amount) ?? 0;
+  const technicalAmount = amountOf(data.amount);
+  const amountRaw = technicalAmount ?? 0;
   const hasTechnical = !!menuName || amountRaw > 0;
 
   // 施術（技術売上）と店販は、どちらか一方だけでも登録できる（店販だけで来店するお客様もいるため）
@@ -170,7 +172,7 @@ export async function updateVisit(formData: FormData) {
   }
   if (hasTechnical) {
     if (!menuName) return { ok: false as const, error: "施術メニューを入力してください。" };
-    if (amountRaw <= 0) return { ok: false as const, error: "技術売上の金額をご確認ください。" };
+    if (technicalAmount === undefined || !Number.isInteger(amountRaw) || amountRaw < 0) return { ok: false as const, error: "技術売上の金額を入力してください。手直しなどは0円で登録できます。" };
   }
   const amount = hasTechnical ? amountRaw : 0;
 

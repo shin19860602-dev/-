@@ -67,7 +67,7 @@ export default function VisitEditForm({ visit, storeKind, onDone }: { visit: Edi
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
-          defaultValue={visit.amount || ""}
+          defaultValue={visit.amount}
           onChange={sanitizeAmountInput}
         />
       </div>
