@@ -30,7 +30,7 @@ export default async function LoginEntryPage() {
         <a className="auth-owner-link" href="/login/owner">
           オーナーとしてログイン
         </a>
-        <a className="auth-owner-link" href="/login/accountant">税理士としてログイン（閲覧専用）</a>
+        <a className="auth-owner-link" href="/login/accountant">リベ大としてログイン（閲覧専用）</a>
       </div>
     </div>
   );

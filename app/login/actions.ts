@@ -47,7 +47,7 @@ export async function submitAccountantLogin(email: string, password: string) {
  if (!result.ok) return { ok: false as const, reason: result.reason };
  const session = await getSession();
  session.staffId = result.staff.id; session.storeId = null; session.role = "ACCOUNTANT";
- session.name = result.staff.name; session.title = "税理士・閲覧専用";
+ session.name = result.staff.name; session.title = "リベ大・閲覧専用";
  delete session.payrollUnlockedStoreId; delete session.savingsUnlockedStoreId;
  await session.save(); return { ok: true as const };
 }

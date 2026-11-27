@@ -44,7 +44,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="owner-name">{session.name}</div>
             <div className="owner-role">
-              {isAccountant ? "税理士・閲覧専用" : isOwner ? "オーナー・全権限" : session.title}
+              {isAccountant ? "リベ大・閲覧専用" : isOwner ? "オーナー・全権限" : session.title}
             </div>
           </div>
           <LogoutButton />

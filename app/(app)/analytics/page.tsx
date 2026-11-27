@@ -44,7 +44,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   if (annualMode) {
     const currentYear = jstParts().year;
     const year = sp.year && /^\d{4}$/.test(sp.year) && Number(sp.year) >= 2000 && Number(sp.year) <= currentYear ? Number(sp.year) : currentYear;
-    return <><Topbar title="集計・分析" scopeLabel={scopeLabel} roleLabel={session.role === "ACCOUNTANT" ? "税理士・閲覧専用" : "オーナー全権限"} /><div className="view">
+    return <><Topbar title="集計・分析" scopeLabel={scopeLabel} roleLabel={session.role === "ACCOUNTANT" ? "リベ大・閲覧専用" : "オーナー全権限"} /><div className="view">
       {periodTabs}
       <form action="/analytics" className="filters" style={{ marginBottom: 16 }}>
         <input type="hidden" name="mode" value="year" />
@@ -152,7 +152,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
 
   return (
     <>
-      <Topbar title="集計・分析" scopeLabel={scopeLabel} roleLabel={session.role === "ACCOUNTANT" ? "税理士・閲覧専用" : "オーナー全権限"} />
+      <Topbar title="集計・分析" scopeLabel={scopeLabel} roleLabel={session.role === "ACCOUNTANT" ? "リベ大・閲覧専用" : "オーナー全権限"} />
       <div className="view">
         {periodTabs}
         <div className="card card-pad" style={{ marginBottom: 16 }}>

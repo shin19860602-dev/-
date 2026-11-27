@@ -10,12 +10,12 @@ export async function createAccountant(form: FormData) {
  const name = String(form.get("name") ?? "").trim();
  const email = String(form.get("email") ?? "").trim();
  const password = String(form.get("password") ?? "");
- if (!name || name.length > 80 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 12 || password.length > 128) {
+ if (!name || name.length > 80 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 8 || password.length > 128) {
   redirect("/accountant-settings?error=invalid");
  }
  const passwordHash = await bcrypt.hash(password, 12);
  try {
-  await prisma.staff.create({ data: { name, email, passwordHash, role: "ACCOUNTANT", title: "税理士・閲覧専用", storeId: null } });
+  await prisma.staff.create({ data: { name, email, passwordHash, role: "ACCOUNTANT", title: "リベ大・閲覧専用", storeId: null } });
  } catch (error) {
   if ((error as { code?: string }).code === "P2002") redirect("/accountant-settings?error=duplicate");
   throw error;

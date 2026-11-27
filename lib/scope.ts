@@ -3,7 +3,7 @@ import type { SessionData } from "@/lib/session";
 
 /**
  * 表示範囲（店舗スコープ）を解決する。
- * オーナー・税理士以外は、URLのクエリを改ざんされても必ず自店舗のデータのみに固定する。
+ * オーナー・リベ大以外は、URLのクエリを改ざんされても必ず自店舗のデータのみに固定する。
  */
 export async function resolveStoreScope(session: SessionData, requestedSlug?: string) {
   if (session.role === "OWNER" || session.role === "ACCOUNTANT") {

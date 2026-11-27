@@ -13,7 +13,7 @@ import PayrollPasswordGate from "./PayrollPasswordGate";
 import PayrollPasswordForm from "./PayrollPasswordForm";
 import InsuranceRateForm from "./InsuranceRateForm";
 
-const ROLE_LABEL: Record<string, string> = { ACCOUNTANT: "税理士・閲覧専用", OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
+const ROLE_LABEL: Record<string, string> = { ACCOUNTANT: "リベ大・閲覧専用", OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 
 export default async function PayrollPage({ searchParams }: { searchParams: Promise<{ store?: string; month?: string }> }) {
   const session = await requireSession({ allowAccountant: true });

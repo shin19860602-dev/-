@@ -14,7 +14,7 @@ export default async function AccountantLoginPage() {
         </a>
         <div className="auth-brand">
           <div className="brand-mark">貝</div>
-          <div className="brand-sub">税理士ログイン（閲覧専用）</div>
+          <div className="brand-sub">リベ大ログイン（閲覧専用）</div>
         </div>
         <AccountantForm />
       </div>

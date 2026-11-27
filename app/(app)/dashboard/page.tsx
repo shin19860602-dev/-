@@ -11,7 +11,7 @@ import ComparisonBars from "../charts/ComparisonBars";
 import SummaryStats from "../SummaryStats";
 import MonthSelect from "../MonthSelect";
 
-const ROLE_LABEL: Record<string, string> = { ACCOUNTANT: "税理士・閲覧専用", OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
+const ROLE_LABEL: Record<string, string> = { ACCOUNTANT: "リベ大・閲覧専用", OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 const timeLabel = (d: Date) => {
   const p = jstParts(d);
   return `${String(p.hours).padStart(2, "0")}:${String(p.minutes).padStart(2, "0")}`;

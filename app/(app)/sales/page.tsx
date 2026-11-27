@@ -15,7 +15,7 @@ import MonthlySalesExport from "./MonthlySalesExport";
 import MonthlyGoalBanner from "./MonthlyGoalBanner";
 import { paymentTotals } from "@/lib/paymentTotals";
 
-const ROLE_LABEL: Record<string, string> = { ACCOUNTANT: "税理士・閲覧専用", OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
+const ROLE_LABEL: Record<string, string> = { ACCOUNTANT: "リベ大・閲覧専用", OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 const GENDER_LABEL: Record<string, string> = { male: "男性", female: "女性", other: "その他" };
 const PAYMENT_LABEL: Record<string, string> = { cash: "現金", credit: "クレジット" };
 const timeLabel = (d: Date) => {
