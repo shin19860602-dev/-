@@ -28,7 +28,7 @@ const CASH = { href: "/cash", label: "現金管理", Icon: CashIcon, ownerOnly: 
 // スタッフ：現場での使用頻度順（売上入力が最優先、次にカルテ）
 const STAFF_ITEMS = [SALES, KARTE, ANALYTICS, DASHBOARD, SETTINGS];
 // オーナー：全店舗の状況を見るダッシュボードが最優先、カルテ登録は下の方でよい
-const OWNER_ITEMS = [DASHBOARD, SALES, ANALYTICS, KARTE, PAYROLL, SETTINGS, VINTAGE, CASH, { href: "/accountant-settings", label: "リベ大の閲覧設定", Icon: SettingsIcon, ownerOnly: true, group: ["/accountant-settings"] }];
+const OWNER_ITEMS = [DASHBOARD, SALES, ANALYTICS, KARTE, PAYROLL, SETTINGS, VINTAGE, CASH, { href: "/accountant-settings", label: "閲覧", Icon: SettingsIcon, ownerOnly: true, group: ["/accountant-settings"] }];
 
 export default function NavLinks({ isOwner, showVintage, isAccountant = false }: { isOwner: boolean; showVintage: boolean; isAccountant?: boolean }) {
   const pathname = usePathname();
