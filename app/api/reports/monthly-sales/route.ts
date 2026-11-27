@@ -17,9 +17,9 @@ export async function GET(request: Request) {
     const params = new URL(request.url).searchParams;
     const month = parseSalesMonth(params.get("month") ?? "");
     if (!month) return errorResponse("出力する年月を正しく選択してください。", 400);
-    if (actor.role !== "OWNER" && !actor.storeId) return errorResponse("出力できる店舗がありません。", 403);
+    if (!["OWNER", "ACCOUNTANT"].includes(actor.role) && !actor.storeId) return errorResponse("出力できる店舗がありません。", 403);
     const stores = await prisma.store.findMany({
-      where: { kind: { in: ["SALON", "LASH"] }, ...(actor.role === "OWNER" ? {} : { id: actor.storeId! }) },
+      where: { kind: { in: ["SALON", "LASH"] }, ...(["OWNER", "ACCOUNTANT"].includes(actor.role) ? {} : { id: actor.storeId! }) },
       select: { id: true, slug: true, name: true, kind: true },
     });
     const scope = monthlyExportScope(actor, stores, params.get("store"));

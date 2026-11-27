@@ -11,14 +11,14 @@ import ComparisonBars from "../charts/ComparisonBars";
 import SummaryStats from "../SummaryStats";
 import MonthSelect from "../MonthSelect";
 
-const ROLE_LABEL: Record<string, string> = { OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
+const ROLE_LABEL: Record<string, string> = { ACCOUNTANT: "税理士・閲覧専用", OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 const timeLabel = (d: Date) => {
   const p = jstParts(d);
   return `${String(p.hours).padStart(2, "0")}:${String(p.minutes).padStart(2, "0")}`;
 };
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ store?: string; month?: string }> }) {
-  const session = await requireSession();
+  const session = await requireSession({ allowAccountant: true });
   if (!session) redirect("/");
 
   const sp = await searchParams;
@@ -383,11 +383,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                         {label}（{dailyWeekday[i]}）
                       </td>
                       <td data-label="客数" style={{ textAlign: "right" }}>
-                        {count > 0 ? (
+                        {count > 0 && session.role !== "ACCOUNTANT" ? (
                           <a href={`/karte?${karteParams.toString()}`} aria-label={`${date}のカルテ ${count}名`} style={{ textDecoration: "underline" }}>
                             {count}名
                           </a>
-                        ) : "0名"}
+                        ) : `${count}名`}
                       </td>
                       <td data-label="技術・現金" style={{ textAlign: "right" }}>{yen(dailyTechCash[i])}</td>
                       <td data-label="技術・クレジット" style={{ textAlign: "right" }}>{yen(dailyTechCredit[i])}</td>

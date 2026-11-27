@@ -13,10 +13,10 @@ import PayrollPasswordGate from "./PayrollPasswordGate";
 import PayrollPasswordForm from "./PayrollPasswordForm";
 import InsuranceRateForm from "./InsuranceRateForm";
 
-const ROLE_LABEL: Record<string, string> = { OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
+const ROLE_LABEL: Record<string, string> = { ACCOUNTANT: "税理士・閲覧専用", OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 
 export default async function PayrollPage({ searchParams }: { searchParams: Promise<{ store?: string; month?: string }> }) {
-  const session = await requireSession();
+  const session = await requireSession({ allowAccountant: true });
   if (!session) redirect("/");
 
   const canEdit = session.role === "OWNER";
@@ -26,13 +26,13 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   const scopeLabel = store ? store.name : "全店舗";
 
   // スタッフ・マネージャーは、自店舗のパスワードを入力するまで中身を見せない
-  const unlocked = canEdit || session.payrollUnlockedStoreId === storeId;
+  const unlocked = session.role === "ACCOUNTANT" || canEdit || session.payrollUnlockedStoreId === storeId;
   if (!unlocked) {
     return (
       <>
-        <Topbar title="設定・給料" scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
+        <Topbar title={session.role === "ACCOUNTANT" ? "スタッフ給与（閲覧専用）" : "設定・給料"} scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
         <div className="view">
-          <SettingsTabs isOwner={session.role === "OWNER"} />
+          {session.role !== "ACCOUNTANT" && <SettingsTabs isOwner={session.role === "OWNER"} />}
           <PayrollPasswordGate storeId={storeId!} />
         </div>
       </>
@@ -103,9 +103,9 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
 
   return (
     <>
-      <Topbar title="設定・給料" scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
+      <Topbar title={session.role === "ACCOUNTANT" ? "スタッフ給与（閲覧専用）" : "設定・給料"} scopeLabel={scopeLabel} roleLabel={ROLE_LABEL[session.role!]} />
       <div className="view">
-        <SettingsTabs isOwner={session.role === "OWNER"} />
+        {session.role !== "ACCOUNTANT" && <SettingsTabs isOwner={session.role === "OWNER"} />}
 
         {canEdit && (
           <div className="grid-2" style={{ marginBottom: 16 }}>
@@ -170,7 +170,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
         <div className="card-sub" style={{ marginTop: 10 }}>
           {canEdit
             ? "※雇用保険は支給合計×料率、所得税は国税庁の源泉徴収税額表（甲欄・0人）から自動計算します（保存前なら編集可）。住民税は自治体の通知額を手入力してください。登録・編集できるのはオーナーのみです。"
-            : "※この店舗のスタッフの給与です（閲覧のみ）。"}
+            : "※スタッフの給与です（閲覧のみ）。"}
         </div>
       </div>
     </>

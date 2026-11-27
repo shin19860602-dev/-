@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession, homePathForSession } from "@/lib/session";
 
 export default async function LoginEntryPage() {
-  const session = await requireSession();
+  const session = await requireSession({ allowAccountant: true });
   if (session) redirect(await homePathForSession(session));
 
   const stores = await prisma.store.findMany({ orderBy: { createdAt: "asc" } });
@@ -30,6 +30,7 @@ export default async function LoginEntryPage() {
         <a className="auth-owner-link" href="/login/owner">
           オーナーとしてログイン
         </a>
+        <a className="auth-owner-link" href="/login/accountant">税理士としてログイン（閲覧専用）</a>
       </div>
     </div>
   );

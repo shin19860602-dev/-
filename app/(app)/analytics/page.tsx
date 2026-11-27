@@ -12,10 +12,10 @@ import Link from "next/link";
 import AnnualAnalytics from "./AnnualAnalytics";
 
 export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<{ store?: string; month?: string; mode?: string; year?: string }> }) {
-  const session = await requireSession();
+  const session = await requireSession({ allowAccountant: true });
   if (!session) redirect("/");
   const actor = await prisma.staff.findUnique({ where: { id: session.staffId! }, select: { role: true, active: true } });
-  if (!actor?.active || actor.role !== "OWNER") {
+  if (!actor?.active || !["OWNER", "ACCOUNTANT"].includes(actor.role)) {
     return (
       <>
         <Topbar title="集計・分析" scopeLabel="-" roleLabel={session.role === "MANAGER" ? "マネージャー権限" : "スタッフ権限"} />
@@ -44,7 +44,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   if (annualMode) {
     const currentYear = jstParts().year;
     const year = sp.year && /^\d{4}$/.test(sp.year) && Number(sp.year) >= 2000 && Number(sp.year) <= currentYear ? Number(sp.year) : currentYear;
-    return <><Topbar title="集計・分析" scopeLabel={scopeLabel} roleLabel="オーナー全権限" /><div className="view">
+    return <><Topbar title="集計・分析" scopeLabel={scopeLabel} roleLabel={session.role === "ACCOUNTANT" ? "税理士・閲覧専用" : "オーナー全権限"} /><div className="view">
       {periodTabs}
       <form action="/analytics" className="filters" style={{ marginBottom: 16 }}>
         <input type="hidden" name="mode" value="year" />
@@ -152,7 +152,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
 
   return (
     <>
-      <Topbar title="集計・分析" scopeLabel={scopeLabel} roleLabel="オーナー全権限" />
+      <Topbar title="集計・分析" scopeLabel={scopeLabel} roleLabel={session.role === "ACCOUNTANT" ? "税理士・閲覧専用" : "オーナー全権限"} />
       <div className="view">
         {periodTabs}
         <div className="card card-pad" style={{ marginBottom: 16 }}>

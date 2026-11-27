@@ -19,7 +19,7 @@ export async function verifyStorePin(storeId: string, pin: string): Promise<Auth
   }
 
   const candidates = await prisma.staff.findMany({
-    where: { storeId, active: true, role: { not: "OWNER" }, pinHash: { not: null } },
+    where: { storeId, active: true, role: { in: ["MANAGER", "STAFF"] }, pinHash: { not: null } },
   });
 
   for (const staff of candidates) {
@@ -43,8 +43,14 @@ export async function verifyStorePin(storeId: string, pin: string): Promise<Auth
 }
 
 export async function verifyOwnerPassword(email: string, password: string): Promise<AuthResult> {
+ return verifyPassword(email, password, "OWNER");
+}
+export async function verifyAccountantPassword(email: string, password: string): Promise<AuthResult> {
+ return verifyPassword(email, password, "ACCOUNTANT");
+}
+async function verifyPassword(email: string, password: string, role: "OWNER" | "ACCOUNTANT"): Promise<AuthResult> {
   const staff = await prisma.staff.findUnique({ where: { email } });
-  if (!staff || !staff.active || staff.role !== "OWNER" || !staff.passwordHash) {
+  if (!staff || !staff.active || staff.role !== role || !staff.passwordHash) {
     return { ok: false, reason: "invalid" };
   }
 

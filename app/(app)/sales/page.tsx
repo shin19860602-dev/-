@@ -15,7 +15,7 @@ import MonthlySalesExport from "./MonthlySalesExport";
 import MonthlyGoalBanner from "./MonthlyGoalBanner";
 import { paymentTotals } from "@/lib/paymentTotals";
 
-const ROLE_LABEL: Record<string, string> = { OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
+const ROLE_LABEL: Record<string, string> = { ACCOUNTANT: "税理士・閲覧専用", OWNER: "オーナー全権限", MANAGER: "マネージャー権限", STAFF: "スタッフ権限" };
 const GENDER_LABEL: Record<string, string> = { male: "男性", female: "女性", other: "その他" };
 const PAYMENT_LABEL: Record<string, string> = { cash: "現金", credit: "クレジット" };
 const timeLabel = (d: Date) => {
@@ -50,7 +50,7 @@ export default async function SalesPage({
 }: {
   searchParams: Promise<{ store?: string; period?: string; staff?: string }>;
 }) {
-  const session = await requireSession();
+  const session = await requireSession({ allowAccountant: true });
   if (!session) redirect("/");
 
   const sp = await searchParams;
@@ -69,7 +69,7 @@ export default async function SalesPage({
       where: { storeId: storeId ?? undefined, active: true, role: { not: "OWNER" }, store: { kind: { not: "VINTAGE" } } },
       orderBy: { name: "asc" },
     }),
-    prisma.customer.findMany({ where: { storeId: storeId ?? undefined, active: true }, orderBy: { name: "asc" } }),
+    session.role === "ACCOUNTANT" ? Promise.resolve([]) : prisma.customer.findMany({ where: { storeId: storeId ?? undefined, active: true }, orderBy: { name: "asc" } }),
     findVisits({ storeId, date: { gte: today.start, lt: today.end } }),
     findVisits({ storeId, date: { gte: lastYearToday.start, lt: lastYearToday.end } }),
     prisma.menuItem.findMany({ where: { storeId: storeId ?? undefined, active: true }, orderBy: { sortOrder: "asc" } }),
@@ -104,6 +104,7 @@ export default async function SalesPage({
       <div className="view">
         <MonthlyGoalBanner storeId={storeId} />
         <MonthlySalesExport initialMonth={`${jstParts().year}-${String(jstParts().month + 1).padStart(2, "0")}`} storeSlug={sp.store} scopeLabel={scopeLabel} />
+        {session.role !== "ACCOUNTANT" && <>
         <NewSaleForm
           isOwner={session.role === "OWNER"}
           fixedStoreId={storeId}
@@ -120,6 +121,7 @@ export default async function SalesPage({
           stores={allStores.map((s) => ({ id: s.id, name: s.name }))}
         />
 
+        </>}
         <div className="card card-pad" style={{ marginBottom: 16 }}>
           <div className="card-title">本日のまとめ</div>
           <div className="card-sub">{scopeLabel}</div>
@@ -180,9 +182,9 @@ export default async function SalesPage({
                 <div className="list-row" key={v.id}>
                   <div className="grow">
                     <div className="title">
-                      <Link href={{ pathname: "/karte", query: { store: v.store.slug, customer: v.customer.id } }} style={{ color: "var(--text)", textDecoration: "underline", textUnderlineOffset: 3 }} title="カルテを開く">
+                      {session.role === "ACCOUNTANT" ? <span>{v.customer.name} 様</span> : <Link href={{ pathname: "/karte", query: { store: v.store.slug, customer: v.customer.id } }} style={{ color: "var(--text)", textDecoration: "underline", textUnderlineOffset: 3 }} title="カルテを開く">
                         {v.customer.name} 様
-                      </Link>・{v.menuName || "店販のみ"}
+                      </Link>}・{v.menuName || "店販のみ"}
                       {v.productName ? `＋店販：${v.productName}` : ""}
                       {v.pointAmount ? `＋ポイント${yen(v.pointAmount)}` : ""}
                     </div>
@@ -213,7 +215,7 @@ export default async function SalesPage({
         </div>
 
         <div className="card" style={{ marginTop: 0 }}>
-          <VisitsTable visits={visits} canEdit={true} />
+          <VisitsTable visits={session.role === "ACCOUNTANT" ? visits.map(v => ({ id: v.id, date: v.date, menuName: v.menuName, amount: v.amount, category: v.category, productName: v.productName, productAmount: v.productAmount, pointAmount: v.pointAmount, paymentMethod: v.paymentMethod, memo: null, store: { slug: v.store.slug, name: v.store.name, colorKey: v.store.colorKey, kind: v.store.kind }, staff: { name: v.staff.name }, customer: { id: v.customer.id, name: v.customer.name } })) : visits} canEdit={session.role !== "ACCOUNTANT"} />
         </div>
 
         <div className="card card-pad" style={{ marginTop: 24, marginBottom: 16 }}>
@@ -248,7 +250,7 @@ export default async function SalesPage({
         </div>
 
         <div className="card" style={{ marginTop: 0 }}>
-          <ExpensesTable expenses={expenses} canEdit={true} />
+          <ExpensesTable expenses={expenses} canEdit={session.role !== "ACCOUNTANT"} />
         </div>
       </div>
     </>

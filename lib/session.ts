@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { getIronSession, type SessionOptions } from "iron-session";
 import { prisma } from "@/lib/prisma";
 
-export type Role = "OWNER" | "MANAGER" | "STAFF";
+export type Role = "OWNER" | "MANAGER" | "STAFF" | "ACCOUNTANT";
 
 export interface SessionData {
   staffId?: string;
@@ -34,7 +34,7 @@ export async function getSession() {
   return getIronSession<SessionData>(cookieStore, sessionOptions);
 }
 
-export async function requireSession() {
+export async function requireSession(options: { allowAccountant?: boolean } = {}) {
   const session = await getSession();
   if (!session.staffId || !session.role) {
     return null;
@@ -45,10 +45,14 @@ export async function requireSession() {
   // Cookieの書き換え（destroy）はServer Action／Route Handlerでしかできないため、
   // ここ（ページ描画中）では行わない。古いCookieは次回ログイン成功時に上書きされる。
   const staff = await prisma.staff.findUnique({ where: { id: session.staffId } });
-  if (!staff || !staff.active) {
+  if (!staff || !staff.active || !["OWNER", "MANAGER", "STAFF", "ACCOUNTANT"].includes(staff.role) || (staff.role === "ACCOUNTANT" && !options.allowAccountant)) {
     return null;
   }
 
+  session.role = staff.role as Role;
+  session.storeId = staff.storeId;
+  session.name = staff.name;
+  session.title = staff.title;
   return session;
 }
 

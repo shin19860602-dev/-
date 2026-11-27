@@ -48,7 +48,7 @@ export default function VisitsTable({ visits, canEdit }: { visits: Visit[]; canE
         </thead>
         <tbody>
           {visits.map((v) =>
-            editingId === v.id ? (
+            canEdit && editingId === v.id ? (
               <EditRow key={v.id} visit={v} colSpan={canEdit ? 8 : 7} onDone={() => setEditingId(null)} />
             ) : (
               <tr key={v.id}>
@@ -58,9 +58,9 @@ export default function VisitsTable({ visits, canEdit }: { visits: Visit[]; canE
                 </td>
                 <td data-label="担当">{v.staff.name}</td>
                 <td data-label="お客様">
-                  <Link href={{ pathname: "/karte", query: { store: v.store.slug, customer: v.customer.id } }} style={{ color: "var(--text)", textDecoration: "underline", textUnderlineOffset: 3 }} title="カルテを開く">
+                  {!canEdit ? <span>{v.customer.name} 様</span> : <Link href={{ pathname: "/karte", query: { store: v.store.slug, customer: v.customer.id } }} style={{ color: "var(--text)", textDecoration: "underline", textUnderlineOffset: 3 }} title="カルテを開く">
                     {v.customer.name} 様
-                  </Link>
+                  </Link>}
                 </td>
                 <td data-label="施術内容">
                   {v.menuName || "店販のみ"}

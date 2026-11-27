@@ -11,8 +11,8 @@ export function parseSalesMonth(value: string): SalesMonth | null {
 export type ExportActor = { role: string; storeId: string | null; active: boolean };
 export type ExportStore = { id: string; slug: string; name: string; kind: string };
 export function monthlyExportScope(actor: ExportActor, stores: ExportStore[], slug?: string | null) {
-  if (!actor.active || !["OWNER", "MANAGER", "STAFF"].includes(actor.role)) return null;
-  const allowed = stores.filter(store => ["SALON", "LASH"].includes(store.kind) && (actor.role === "OWNER" || store.id === actor.storeId));
+  if (!actor.active || !["OWNER", "MANAGER", "STAFF", "ACCOUNTANT"].includes(actor.role)) return null;
+  const allowed = stores.filter(store => ["SALON", "LASH"].includes(store.kind) && (["OWNER", "ACCOUNTANT"].includes(actor.role) || store.id === actor.storeId));
   const selected = slug ? allowed.filter(store => store.slug === slug) : allowed;
   if (!selected.length) return null;
   return { storeIds: selected.map(store => store.id), label: selected.length === 1 ? selected[0].name : "全サロン" };

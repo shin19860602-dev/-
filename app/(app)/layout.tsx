@@ -7,16 +7,17 @@ import LogoutButton from "./LogoutButton";
 import { givenNameInitial as initial } from "@/lib/format";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const session = await requireSession();
+  const session = await requireSession({ allowAccountant: true });
   if (!session) redirect("/");
 
+  const isAccountant = session.role === "ACCOUNTANT";
   const isOwner = session.role === "OWNER";
   // 「全店舗」は美容部門（SALON/LASH）のみを指す。古着部門（VINTAGE）は完全に別画面で扱う。
   const allStoresForLayout = await prisma.store.findMany({
     orderBy: { createdAt: "asc" },
     select: { id: true, slug: true, name: true, colorKey: true, kind: true },
   });
-  const stores = isOwner ? allStoresForLayout.filter((s) => s.kind !== "VINTAGE") : [];
+  const stores = (isOwner || isAccountant) ? allStoresForLayout.filter((s) => s.kind !== "VINTAGE") : [];
   const isVintageStaff = !isOwner && allStoresForLayout.find((s) => s.id === session.storeId)?.kind === "VINTAGE";
 
   return (
@@ -27,7 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <span className="brand-sub">kaichan no SALON System</span>
         </div>
 
-        {isOwner ? (
+        {isOwner || isAccountant ? (
           <StoreFilter stores={stores} />
         ) : (
           <div className="side-block-label" style={{ padding: "0 10px" }}>
@@ -35,7 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         )}
 
-        <NavLinks isOwner={isOwner} showVintage={isOwner || isVintageStaff} />
+        <NavLinks isAccountant={isAccountant} isOwner={isOwner} showVintage={isOwner || isVintageStaff} />
 
         <div className="sidebar-spacer" />
         <div className="owner-card">
@@ -43,7 +44,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="owner-name">{session.name}</div>
             <div className="owner-role">
-              {isOwner ? "オーナー・全権限" : session.title}
+              {isAccountant ? "税理士・閲覧専用" : isOwner ? "オーナー・全権限" : session.title}
             </div>
           </div>
           <LogoutButton />
